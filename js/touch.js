@@ -22,6 +22,9 @@ const Touch = {
     // NPC interaction flag (only talk when explicitly tapped)
     _tappedNpc: false,
 
+    // Pending NPC talk after pathfinding finishes (consumed by engine when !Player.moving)
+    _pendingTalkNpc: null,
+
     // Settings slider drag state (key of the setting being dragged, or null)
     _sliderDrag: null,
 
@@ -130,6 +133,17 @@ const Touch = {
         if (Debug.active) {
             this._handleSettingsTap(pos);
             return;
+        }
+
+        // Always-on fullscreen toggle button (top-right, visible in every state)
+        if (Game._getFullscreenBtnRect) {
+            const r = Game._getFullscreenBtnRect(this._canvas.width);
+            if (pos.x >= r.x - 4 && pos.x <= r.x + r.w + 4 &&
+                pos.y >= r.y - 4 && pos.y <= r.y + r.h + 4) {
+                Debug._toggleFullscreen();
+                Audio.play('confirm');
+                return;
+            }
         }
 
         const state = Game.state;
@@ -412,8 +426,7 @@ const Touch = {
                 const npcX = this.tapTarget.npcX || this.tapTarget.gridX;
                 const npcY = this.tapTarget.npcY || this.tapTarget.gridY;
                 Player.direction = this._directionTo(Player.gridX, Player.gridY, npcX, npcY);
-                this._tappedNpc = true;
-                setTimeout(() => Input.triggerPress('z'), 50);
+                this._pendingTalkNpc = { x: npcX, y: npcY };
                 this.tapTarget = null;
             }
             return;
@@ -586,6 +599,7 @@ const Touch = {
         this.path = [];
         this.pathIndex = 0;
         this.tapTarget = null;
+        this._pendingTalkNpc = null;
     },
 
     // ─── RENDER ───

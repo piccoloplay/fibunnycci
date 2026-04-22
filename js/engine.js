@@ -296,6 +296,20 @@ const Game = {
         }
     },
 
+    _startNpcDialog(npc) {
+        Touch.cancelPath();
+        Audio.play('npcTalk');
+        const dialogueData = NPC.interact(npc);
+        Dialogue.start(dialogueData);
+        this.state = 'dialogue';
+        if (npc.triggerCombat) {
+            this._pendingCombat = npc.triggerCombat;
+        } else if (npc.triggerTris) {
+            this._pendingTris = npc.triggerTris;
+        }
+        NPC.advanceDialogue(npc);
+    },
+
     _updateOverworld(dt) {
         Player.update(dt);
 
@@ -308,23 +322,25 @@ const Game = {
             }
         }
 
-        // Interact with NPC — only via explicit tap on NPC or keyboard confirm when facing
+        // Pending talk queued by Touch after pathfinding — fires when player is fully stopped
+        if (!Player.moving && Touch._pendingTalkNpc) {
+            const { x, y } = Touch._pendingTalkNpc;
+            Touch._pendingTalkNpc = null;
+            const npc = NPC.getAt(x, y);
+            if (npc) {
+                Player.direction = Touch._directionTo(Player.gridX, Player.gridY, x, y);
+                this._startNpcDialog(npc);
+                return;
+            }
+        }
+
+        // Interact with NPC via keyboard confirm when facing
         if (Input.wasPressed('confirm') && !Player.moving) {
             const facing = Player.getFacingTile();
             const npc = NPC.getAt(facing.x, facing.y);
             if (npc && (Touch._tappedNpc || !Touch.enabled)) {
                 Touch._tappedNpc = false;
-                Touch.cancelPath();
-                Audio.play('npcTalk');
-                const dialogueData = NPC.interact(npc);
-                Dialogue.start(dialogueData);
-                this.state = 'dialogue';
-                if (npc.triggerCombat) {
-                    this._pendingCombat = npc.triggerCombat;
-                } else if (npc.triggerTris) {
-                    this._pendingTris = npc.triggerTris;
-                }
-                NPC.advanceDialogue(npc);
+                this._startNpcDialog(npc);
             }
         }
 
@@ -401,9 +417,56 @@ const Game = {
         Debug.updateFPS(performance.now());
         Debug.renderOverlay(ctx, w);
 
+        // Always-on fullscreen toggle button (rendered below the settings panel so it hides when open)
+        if (Debug._slideProgress <= 0) {
+            this._renderFullscreenButton(ctx, w, h);
+        }
+
         // Settings panel on top of everything
         if (Debug._slideProgress > 0) {
             Debug.renderPanel(ctx, w, h);
+        }
+    },
+
+    // Fullscreen button position (used by both render and touch hit-test)
+    _fsBtn: { x: 0, y: 44, size: 40 },
+
+    _getFullscreenBtnRect(w) {
+        const s = this._fsBtn.size;
+        return { x: w - s - 10, y: this._fsBtn.y, w: s, h: s };
+    },
+
+    _renderFullscreenButton(ctx, w) {
+        const r = this._getFullscreenBtnRect(w);
+        const isFs = Debug._isFullscreen();
+
+        // Pill background
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 10);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 1;
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 10);
+        ctx.stroke();
+
+        // Expand / collapse icon: 4 L-shaped corners
+        const cx = r.x + r.w / 2;
+        const cy = r.y + r.h / 2;
+        const d = isFs ? 6 : 10;   // inner gap from center for collapse vs expand
+        const len = 7;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        const corners = [[-1,-1],[1,-1],[-1,1],[1,1]];
+        for (const [sx, sy] of corners) {
+            const ax = cx + sx * d;
+            const ay = cy + sy * d;
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax + sx * len, ay);
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax, ay + sy * len);
+            ctx.stroke();
         }
     },
 

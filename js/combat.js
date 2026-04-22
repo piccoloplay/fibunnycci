@@ -48,6 +48,21 @@ const Combat = {
     screenFlashColor: '#fff',
     floatingTexts: [], // {text, x, y, color, size, life, maxLife, vy}
 
+    // Camera zoom (applies to combat scene only, not to UI overlays)
+    cameraZoom: 1.0,
+    cameraZoomTarget: 1.0,
+    _phaseZoomTargets: {
+        'unit_select': 1.0,
+        'tap_to_play': 1.02,
+        'morra_choice': 1.05,
+        'countdown': 1.10,
+        'reveal': 1.18,
+        'resolve': 1.12,
+        'between_turns': 1.0,
+        'round_end': 0.92,
+        'match_end': 1.0
+    },
+
     // Polka-dot transition
     _transition: { active: false, timer: 0, duration: 600, color: '#000', expanding: true, onMid: null },
 
@@ -125,6 +140,8 @@ const Combat = {
         this.phase = 'unit_select';
         this.selectIndex = -1; // Nothing pre-selected
         this.phaseTimer = 0;
+        this.cameraZoom = 1.0;
+        this.cameraZoomTarget = 1.0;
     },
 
     // ─── UPDATE ───
@@ -143,6 +160,12 @@ const Combat = {
             this.screenShake *= 0.9;
             if (this.screenShake < 0.5) this.screenShake = 0;
         }
+
+        // Camera zoom: ease toward phase target, with a small punch boost from shake
+        const baseZoom = this._phaseZoomTargets[this.phase] ?? 1.0;
+        const punchBoost = Math.min(0.12, this.screenShake * 0.006);
+        this.cameraZoomTarget = baseZoom + punchBoost;
+        this.cameraZoom += (this.cameraZoomTarget - this.cameraZoom) * Math.min(1, dt * 0.012);
 
         switch (this.phase) {
             case 'unit_select': this._updateUnitSelect(); break;
@@ -797,6 +820,14 @@ const Combat = {
 
     // ─── RENDER: COMBAT SCENE ───
     _renderCombatScene(ctx, w, h) {
+        // Camera zoom (center-anchored) — only wraps the scene, not UI overlays.
+        ctx.save();
+        if (Math.abs(this.cameraZoom - 1) > 0.001) {
+            ctx.translate(w / 2, h / 2);
+            ctx.scale(this.cameraZoom, this.cameraZoom);
+            ctx.translate(-w / 2, -h / 2);
+        }
+
         const stage = this.STAGES[this._stageId] || this.STAGES.villaggio;
         const t = this.animTimer;
 
@@ -1093,6 +1124,8 @@ const Combat = {
         UI.textOutline(ctx, `${this.cpuCreature.currentHp}/${this.cpuCreature.maxHp}`, w - 14, y + barH + 18, {
             color: '#ddd', size: 16, bold: true, align: 'right'
         });
+
+        ctx.restore(); // End camera-zoom wrapper
     },
 
     // ─── RENDER: TAP TO PLAY ───
