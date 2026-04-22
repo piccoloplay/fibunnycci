@@ -136,6 +136,9 @@ const Debug = {
             } else if (item.key === 'close') {
                 this.active = false;
                 Audio.play('cancel');
+            } else if (item.key === 'fullscreen') {
+                this._toggleFullscreen();
+                Audio.play('confirm');
             }
         }
 
@@ -156,9 +159,26 @@ const Debug = {
                 min: s.min, max: s.max, step: s.step
             });
         }
+        const fsLabel = this._isFullscreen() ? 'Esci da schermo intero' : 'Schermo intero';
+        items.push({ key: 'fullscreen', label: fsLabel, type: 'action' });
         items.push({ key: 'reset', label: 'Reset impostazioni', type: 'action' });
         items.push({ key: 'close', label: 'Chiudi', type: 'action' });
         return items;
+    },
+
+    _isFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    },
+
+    _toggleFullscreen() {
+        if (this._isFullscreen()) {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen;
+            if (exit) exit.call(document);
+        } else {
+            const el = document.documentElement;
+            const req = el.requestFullscreen || el.webkitRequestFullscreen;
+            if (req) req.call(el);
+        }
     },
 
     _resetDefaults() {
