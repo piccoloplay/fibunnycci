@@ -6,7 +6,7 @@ const Debug = {
     _slideProgress: 0, // 0=closed, 1=open
 
     settings: {
-        playerSpeed: { value: 1.8, min: 0.5, max: 5, step: 0.1, label: 'Velocita giocatore' },
+        playerSpeed: { value: 0.5, min: 0.5, max: 5, step: 0.1, label: 'Velocita giocatore' },
         textSpeed: { value: 30, min: 10, max: 100, step: 5, label: 'Velocita testo' },
         musicVolume: { value: 0.3, min: 0, max: 1, step: 0.05, label: 'Volume musica' },
         sfxVolume: { value: 0.5, min: 0, max: 1, step: 0.05, label: 'Volume effetti' },
@@ -155,7 +155,7 @@ const Debug = {
 
     _resetDefaults() {
         const defaults = {
-            playerSpeed: 1.8, textSpeed: 30, musicVolume: 0.3, sfxVolume: 0.5,
+            playerSpeed: 0.5, textSpeed: 30, musicVolume: 0.3, sfxVolume: 0.5,
             showGrid: false, showCollisions: false, showFPS: false, showPlayerPos: false
         };
         for (const [key, val] of Object.entries(defaults)) {
