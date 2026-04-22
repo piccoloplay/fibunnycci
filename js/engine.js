@@ -31,10 +31,10 @@ const Game = {
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // HD resolution for smooth casual mobile look
+        // HD resolution, pixel-perfect (no smoothing) for 16-bit look
         this.canvas.width = 672;
         this.canvas.height = 1320;
-        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingEnabled = false;
 
         Input.init();
         Touch.init(this.canvas);
@@ -42,6 +42,7 @@ const Game = {
         Menu.init();
         Debug.init();
         Audio.init();
+        Sprites.init();
         TitleScreen.init();
 
         this.state = 'title';

@@ -65,15 +65,10 @@ const GameMap = {
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
                 const tileId = this.getTile(col, row);
-                const tile = this.TILES[tileId] || this.TILES[0];
                 const x = col * ts - cameraX;
                 const y = row * ts - cameraY;
-
-                ctx.fillStyle = tile.color;
-                ctx.fillRect(x, y, ts, ts);
-
-                // Add detail to some tiles
-                this._drawTileDetail(ctx, tileId, x, y, ts);
+                // 16-bit pixel tile (procedural). Falls back to solid color via default case.
+                Sprites.drawTile(ctx, tileId, x, y, ts);
             }
         }
     },

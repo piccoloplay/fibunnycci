@@ -205,7 +205,44 @@ const Creatures = {
     // ─── MAIN DRAW ───
     drawCreature(ctx, x, y, creature, size, anim, animTimer) {
         const s = size || 30;
-        const bob = anim === 'idle' ? Math.sin((animTimer || 0) * 0.003) * 2 : 0;
+        const bob = anim === 'idle' ? Math.floor(Math.sin((animTimer || 0) * 0.003) * 2) : 0;
+
+        // 16-bit pixel sprite path (preferred)
+        if (typeof Sprites !== 'undefined' && Sprites._cache && Sprites._cache['creature_' + creature.id]) {
+            const sprite = Sprites._cache['creature_' + creature.id];
+            const scale = Math.max(1, Math.round((s * 2) / sprite.width));
+            const pw = sprite.width * scale;
+            const ph = sprite.height * scale;
+            const drawX = Math.round(x - pw / 2);
+            const drawY = Math.round(y - ph / 2 + bob);
+
+            // Pixel shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.28)';
+            ctx.fillRect(drawX + pw * 0.2, drawY + ph - 2, pw * 0.6, 4);
+
+            // Attack anim: lunge forward
+            let shiftX = 0;
+            if (anim === 'win' || anim === 'crit') {
+                const t = (animTimer || 0) * 0.01;
+                shiftX = Math.floor(Math.sin(t) * 6);
+            } else if (anim === 'lose') {
+                shiftX = -Math.floor(Math.abs(Math.sin((animTimer || 0) * 0.02)) * 4);
+            }
+            Sprites.draw(ctx, 'creature_' + creature.id, drawX + shiftX, drawY, scale);
+
+            // Element badge
+            if (creature.element && this.ELEMENTS[creature.element]) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.beginPath();
+                ctx.arc(x + s * 0.55, y - s * 0.6, s * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = `${Math.round(s * 0.25)}px serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.ELEMENTS[creature.element].icon, x + s * 0.55, y - s * 0.52);
+                ctx.textAlign = 'left';
+            }
+            return;
+        }
 
         ctx.save();
         ctx.translate(x, y + bob);

@@ -145,6 +145,23 @@ const Player = {
         const cx = x + ts / 2;
         const cy = y + ts / 2;
 
+        // Soft pixel shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        const sh = ts / 16;
+        ctx.fillRect(Math.round(x + 4 * sh), Math.round(y + 13 * sh), Math.ceil(8 * sh), Math.ceil(2 * sh));
+
+        // Pick sprite based on facing + walk frame
+        const dir = this.direction || 'down';
+        let face = 'down';
+        let flip = false;
+        if (dir.includes('up')) face = 'up';
+        else if (dir.includes('left')) { face = 'right'; flip = true; }
+        else if (dir.includes('right')) face = 'right';
+        const frame = (this.moving && (this.animFrame % 2 === 1)) ? 1 : 0;
+        const key = `player_${face}_${frame}`;
+        Sprites.draw(ctx, key, Math.round(x), Math.round(y), ts / 16, flip);
+        return;
+
         const bob = this.moving ? Math.sin(this.animFrame * Math.PI / 2) * 2 : 0;
 
         // Derive facing from direction
