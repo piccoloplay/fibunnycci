@@ -334,6 +334,22 @@ const UI = {
                 ctx.fillStyle = this.colors.blueLight;
                 ctx.beginPath(); ctx.arc(0, -s * 0.15, s * 0.32, 0, Math.PI * 2); ctx.fill();
                 break;
+            case 'home':
+                // House: roof triangle + body square + door
+                ctx.fillStyle = this.colors.red;
+                ctx.beginPath();
+                ctx.moveTo(-s * 0.5, -s * 0.05);
+                ctx.lineTo(0, -s * 0.5);
+                ctx.lineTo(s * 0.5, -s * 0.05);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = this.colors.orange;
+                this.roundRect(ctx, -s * 0.38, -s * 0.08, s * 0.76, s * 0.5, 2);
+                ctx.fill();
+                ctx.fillStyle = '#3a2415';
+                this.roundRect(ctx, -s * 0.1, s * 0.1, s * 0.2, s * 0.32, 2);
+                ctx.fill();
+                break;
             case 'bestiary':
                 // Book
                 ctx.fillStyle = this.colors.orange;

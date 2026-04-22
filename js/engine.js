@@ -110,8 +110,78 @@ const Game = {
         requestAnimationFrame(t => this.loop(t));
     },
 
+    // ─── TOAST ───
+    _toast: null,
+    showToast(text, ms) {
+        this._toast = { text, life: 0, maxLife: ms || 3500 };
+    },
+    _updateToast(dt) {
+        if (!this._toast) return;
+        this._toast.life += dt;
+        if (this._toast.life >= this._toast.maxLife) this._toast = null;
+    },
+    _renderToast(ctx, w, h) {
+        const t = this._toast;
+        if (!t) return;
+        let alpha = 1;
+        if (t.life < 200) alpha = t.life / 200;
+        else if (t.life > t.maxLife - 400) alpha = (t.maxLife - t.life) / 400;
+        alpha = Math.max(0, Math.min(1, alpha));
+
+        const lines = t.text.split('\n');
+        ctx.save();
+        ctx.font = 'bold 16px Nunito, sans-serif';
+        const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
+        const padX = 20, padY = 14, lineH = 24;
+        const boxW = Math.min(w - 40, Math.max(200, maxW + padX * 2));
+        const boxH = padY * 2 + lines.length * lineH;
+        const x = (w - boxW) / 2;
+        const y = h - boxH - 140;
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(15,15,35,0.94)';
+        UI.roundRect(ctx, x, y, boxW, boxH, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(160,160,255,0.5)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, x, y, boxW, boxH, 12);
+        ctx.stroke();
+        lines.forEach((line, i) => {
+            UI.text(ctx, line, w / 2, y + padY + i * lineH + 18, {
+                color: '#fff', size: 15, align: 'center', bold: i === 0
+            });
+        });
+        ctx.restore();
+    },
+
+    // Cross-browser fullscreen toggle with iOS fallback
+    toggleFullscreen() {
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        const iosHint = 'Schermo intero non disponibile.\nSu iPhone: Condividi → Aggiungi a Home';
+        if (!req) {
+            this.showToast(iosHint, 4500);
+            return;
+        }
+        try {
+            if (isFs && exit) {
+                exit.call(document);
+            } else {
+                const result = req.call(el);
+                if (result && typeof result.catch === 'function') {
+                    result.catch(() => this.showToast(iosHint, 4500));
+                }
+            }
+        } catch (e) {
+            this.showToast(iosHint, 4500);
+        }
+    },
+
     // ─── UPDATE ───
     update(dt) {
+        this._updateToast(dt);
         switch (this.state) {
             case 'title':
                 this._updateTitle(dt);
@@ -422,6 +492,9 @@ const Game = {
             this._renderFullscreenButton(ctx, w, h);
         }
 
+        // Toast (above everything except the settings panel)
+        this._renderToast(ctx, w, h);
+
         // Settings panel on top of everything
         if (Debug._slideProgress > 0) {
             Debug.renderPanel(ctx, w, h);
@@ -518,6 +591,7 @@ const Game = {
 
     // Bottom nav bar items and hit areas
     _navBarItems: [
+        { id: 'home', label: 'Home', icon: 'home' },
         { id: 'team', label: 'Team', icon: 'team' },
         { id: 'bestiary', label: 'Bestia', icon: 'bestiary' },
         { id: 'inventory', label: 'Zaino', icon: 'inventory' },

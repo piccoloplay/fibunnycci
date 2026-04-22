@@ -140,7 +140,7 @@ const Touch = {
             const r = Game._getFullscreenBtnRect(this._canvas.width);
             if (pos.x >= r.x - 4 && pos.x <= r.x + r.w + 4 &&
                 pos.y >= r.y - 4 && pos.y <= r.y + r.h + 4) {
-                Debug._toggleFullscreen();
+                Game.toggleFullscreen();
                 Audio.play('confirm');
                 return;
             }
@@ -313,6 +313,41 @@ const Touch = {
                 }
             }
         }
+
+        if (Combat.phase === 'action_select') {
+            const cardW = w - 60;
+            const cardH = 64;
+            const gap = 12;
+            const startY = h * 0.66;
+            const startX = 30;
+            for (let i = 0; i < Combat.ACTIONS.length; i++) {
+                const y = startY + i * (cardH + gap);
+                if (pos.x >= startX && pos.x <= startX + cardW && pos.y >= y && pos.y <= y + cardH) {
+                    const a = Combat.ACTIONS[i];
+                    if (!Combat._isActionAvailable(a.id)) { Audio.play('cancel'); return; }
+                    Combat.selectIndex = i;
+                    Combat._commitAction(i);
+                    return;
+                }
+            }
+        }
+
+        if (Combat.phase === 'element_pick') {
+            const elementIds = Object.keys(Creatures.ELEMENTS);
+            const btnSize = 96;
+            const gap = 10;
+            const totalW = btnSize * elementIds.length + gap * (elementIds.length - 1);
+            const startX = (w - totalW) / 2;
+            const btnY = h * 0.68;
+            for (let i = 0; i < elementIds.length; i++) {
+                const bx = startX + i * (btnSize + gap);
+                if (pos.x >= bx && pos.x <= bx + btnSize && pos.y >= btnY && pos.y <= btnY + btnSize) {
+                    Combat.selectIndex = i;
+                    Input.triggerPress('z');
+                    return;
+                }
+            }
+        }
     },
 
     _getAdjacentWalkable(npcX, npcY) {
@@ -476,8 +511,12 @@ const Touch = {
 
         Audio.play('select');
 
-        Audio.play('select');
         switch (item.id) {
+            case 'home':
+                Game._syncGameState();
+                if (typeof WorldMap !== 'undefined' && WorldMap.open) WorldMap.open();
+                Game.state = 'worldmap';
+                break;
             case 'team':
                 TeamBuilder.open();
                 Game.state = 'teambuilder';

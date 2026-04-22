@@ -30,6 +30,14 @@ const Combat = {
     turnCrit: false,
     turnEvade: false,
     turnResult: '',      // 'win','lose','crit','evas','draw'
+    turnElementMult: 1.0, // last hit element multiplier (1.5 super, 0.67 resist)
+
+    // Per-match special move state (reset in start())
+    playerUsedPowerUp: false,
+    playerUsedElementSwap: false,
+    playerNextAttackBuff: 1.0, // consumed on next successful player attack
+    powerUpHpCostPct: 0.15,    // 15% of max HP
+    powerUpDamageMult: 1.8,
 
     // Timers & animation
     phaseTimer: 0,
@@ -54,6 +62,8 @@ const Combat = {
     _phaseZoomTargets: {
         'unit_select': 1.0,
         'tap_to_play': 1.02,
+        'action_select': 1.03,
+        'element_pick': 1.05,
         'morra_choice': 1.05,
         'countdown': 1.10,
         'reveal': 1.18,
@@ -142,6 +152,11 @@ const Combat = {
         this.phaseTimer = 0;
         this.cameraZoom = 1.0;
         this.cameraZoomTarget = 1.0;
+
+        // Reset per-match special moves
+        this.playerUsedPowerUp = false;
+        this.playerUsedElementSwap = false;
+        this.playerNextAttackBuff = 1.0;
     },
 
     // ─── UPDATE ───
@@ -170,6 +185,8 @@ const Combat = {
         switch (this.phase) {
             case 'unit_select': this._updateUnitSelect(); break;
             case 'tap_to_play': this._updateTapToPlay(); break;
+            case 'action_select': this._updateActionSelect(); break;
+            case 'element_pick': this._updateElementPick(); break;
             case 'morra_choice': this._updateMorraChoice(); break;
             case 'countdown': this._updateCountdown(dt); break;
             case 'reveal': this._updateReveal(dt); break;
@@ -228,11 +245,114 @@ const Combat = {
     // ─── PHASE: TAP TO PLAY ───
     _updateTapToPlay() {
         if (this.phaseTimer > 500 && Input.wasPressed('confirm')) {
-            this.phase = 'morra_choice';
+            this.phase = 'action_select';
             this.phaseTimer = 0;
             this.playerChoice = -1;
             this.cpuChoice = -1;
-            this.selectIndex = -1; // Nothing pre-selected — user must tap
+            this.selectIndex = -1;
+        }
+    },
+
+    // ─── PHASE: ACTION SELECT (Attacco / Potenziamento / Cambio elemento) ───
+    ACTIONS: [
+        { id: 'attack', label: 'Attacco', icon: '⚔️', color: '#4488ff' },
+        { id: 'powerup', label: 'Potenziamento', icon: '💥', color: '#ff8844', hint: (c) => `-${Math.round(c.maxHp * Combat.powerUpHpCostPct)} HP, +80% danno` },
+        { id: 'element', label: 'Cambio elemento', icon: '🌀', color: '#aa66ff', hint: () => 'Scegli nuovo elemento' }
+    ],
+
+    _updateActionSelect() {
+        const maxIdx = this.ACTIONS.length - 1;
+        if (Input.wasPressed('left')) {
+            this.selectIndex = Math.max(0, (this.selectIndex < 0 ? 0 : this.selectIndex - 1));
+        }
+        if (Input.wasPressed('right')) {
+            this.selectIndex = Math.min(maxIdx, (this.selectIndex < 0 ? 0 : this.selectIndex + 1));
+        }
+        if (Input.wasPressed('confirm') && this.selectIndex >= 0) {
+            this._commitAction(this.selectIndex);
+        }
+    },
+
+    _isActionAvailable(id) {
+        if (id === 'powerup') return !this.playerUsedPowerUp && this.playerCreature.currentHp > this.playerCreature.maxHp * this.powerUpHpCostPct + 1;
+        if (id === 'element') return !this.playerUsedElementSwap;
+        return true;
+    },
+
+    _commitAction(index) {
+        const action = this.ACTIONS[index];
+        if (!action || !this._isActionAvailable(action.id)) return;
+        Audio.play('confirm');
+        this._vibrate(40);
+
+        if (action.id === 'attack') {
+            this._gotoMorraChoice();
+            return;
+        }
+        if (action.id === 'powerup') {
+            this.playerUsedPowerUp = true;
+            const cost = Math.round(this.playerCreature.maxHp * this.powerUpHpCostPct);
+            this.playerCreature.currentHp = Math.max(1, this.playerCreature.currentHp - cost);
+            this.playerNextAttackBuff = this.powerUpDamageMult;
+            this.screenFlash = 200;
+            this.screenFlashColor = '#ff8844';
+            this.screenShake = 6;
+            this.floatingTexts.push({
+                text: `-${cost} HP`, x: this._w * 0.25, y: this._h * 0.35,
+                color: '#ff8844', size: 22, life: 0, maxLife: 1200, vy: -1.2
+            });
+            this.floatingTexts.push({
+                text: 'CARICO!', x: this._w * 0.25, y: this._h * 0.3,
+                color: '#ffcc00', size: 22, life: 0, maxLife: 1400, vy: -0.8
+            });
+            this._gotoMorraChoice();
+            return;
+        }
+        if (action.id === 'element') {
+            this.phase = 'element_pick';
+            this.phaseTimer = 0;
+            this.selectIndex = 0;
+            return;
+        }
+    },
+
+    _gotoMorraChoice() {
+        this.phase = 'morra_choice';
+        this.phaseTimer = 0;
+        this.playerChoice = -1;
+        this.cpuChoice = -1;
+        this.selectIndex = -1;
+    },
+
+    // ─── PHASE: ELEMENT PICK ───
+    _updateElementPick() {
+        const elementIds = Object.keys(Creatures.ELEMENTS);
+        if (Input.wasPressed('left')) this.selectIndex = Math.max(0, this.selectIndex - 1);
+        if (Input.wasPressed('right')) this.selectIndex = Math.min(elementIds.length - 1, this.selectIndex + 1);
+        if (Input.wasPressed('cancel')) {
+            this.phase = 'action_select';
+            this.selectIndex = 0;
+            return;
+        }
+        if (Input.wasPressed('confirm')) {
+            const newEl = elementIds[this.selectIndex];
+            if (!newEl) return;
+            this.playerCreature.element = newEl;
+            this.playerUsedElementSwap = true;
+            Audio.play('confirm');
+            this._vibrate(40);
+            const color = Creatures.ELEMENTS[newEl].color;
+            this.screenFlash = 180;
+            this.screenFlashColor = color;
+            this.floatingTexts.push({
+                text: `Elemento → ${Creatures.ELEMENTS[newEl].name.toUpperCase()}`,
+                x: this._w / 2, y: this._h * 0.3,
+                color, size: 22, life: 0, maxLife: 1600, vy: -0.6
+            });
+            // Swap takes the turn — skip straight to between_turns so CPU gets a free tempo
+            this.phase = 'between_turns';
+            this.phaseTimer = 0;
+            this._betweenTransitionFired = false;
         }
     },
 
@@ -337,6 +457,19 @@ const Combat = {
                         life: 0,
                         maxLife: 1500,
                         vy: -0.8
+                    });
+                }
+                if (this.turnElementMult && this.turnElementMult !== 1) {
+                    const superEff = this.turnElementMult > 1;
+                    this.floatingTexts.push({
+                        text: superEff ? 'SUPER!' : 'RESISTE',
+                        x: this._w / 2,
+                        y: this._h * 0.32,
+                        color: superEff ? '#44ff88' : '#ff8844',
+                        size: 18,
+                        life: 0,
+                        maxLife: 1300,
+                        vy: -0.7
                     });
                 }
             } else if (this.turnResult === 'evas') {
@@ -543,13 +676,31 @@ const Combat = {
         let damage = attacker.atk - (defender.def * 0.3);
         damage = Math.max(5, damage); // minimum 5 damage always
 
-        // Step 3: Crit
+        // Step 3: Element matchup multiplier
+        let elementMult = 1.0;
+        if (attacker.element && defender.element && Creatures.ELEMENTS) {
+            const atkEl = Creatures.ELEMENTS[attacker.element];
+            if (atkEl) {
+                if (atkEl.strong === defender.element) elementMult = 1.5;
+                else if (atkEl.weak === defender.element) elementMult = 0.67;
+            }
+        }
+        this.turnElementMult = elementMult;
+        damage *= elementMult;
+
+        // Step 4: Player Potenziamento buff (consumed on first player attack)
+        if (attacker === this.playerCreature && this.playerNextAttackBuff > 1) {
+            damage *= this.playerNextAttackBuff;
+            this.playerNextAttackBuff = 1.0;
+        }
+
+        // Step 5: Crit
         this.turnCrit = Math.random() < (attacker.critChance || 0.1);
         if (this.turnCrit) {
             damage *= 2;
         }
 
-        // Step 4: Round
+        // Step 6: Round
         damage = Math.round(damage);
         this.turnDamage = damage;
         this.turnEvade = false;
@@ -665,6 +816,8 @@ const Combat = {
         switch (this.phase) {
             case 'unit_select': this._renderUnitSelect(ctx, w, h); break;
             case 'tap_to_play': this._renderCombatScene(ctx, w, h); this._renderTapToPlay(ctx, w, h); break;
+            case 'action_select': this._renderCombatScene(ctx, w, h); this._renderActionSelect(ctx, w, h); break;
+            case 'element_pick': this._renderCombatScene(ctx, w, h); this._renderElementPick(ctx, w, h); break;
             case 'morra_choice': this._renderCombatScene(ctx, w, h); this._renderMorraButtons(ctx, w, h); break;
             case 'countdown': this._renderCombatScene(ctx, w, h); this._renderCountdown(ctx, w, h); break;
             case 'reveal': this._renderCombatScene(ctx, w, h); this._renderRevealEpic(ctx, w, h); break;
@@ -1144,6 +1297,111 @@ const Combat = {
             const arrowBob = Math.sin(this.animTimer * 0.005) * 8;
             UI.text(ctx, '▲', w / 2, h * 0.7 + arrowBob, {
                 color: 'rgba(255,204,0,0.5)', size: 30, align: 'center'
+            });
+        }
+    },
+
+    // ─── RENDER: ACTION SELECT ───
+    _renderActionSelect(ctx, w, h) {
+        // Darken the scene under the action picker
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(0, h * 0.52, w, h * 0.48);
+
+        // Title
+        UI.text(ctx, 'AZIONE', w / 2, h * 0.58, {
+            color: '#ffcc00', size: 26, bold: true, align: 'center'
+        });
+
+        // Element matchup hint
+        if (this.playerCreature && this.cpuCreature && this.playerCreature.element && this.cpuCreature.element) {
+            const atkEl = Creatures.ELEMENTS[this.playerCreature.element];
+            let hintText = '', hintColor = '#aaa';
+            if (atkEl && atkEl.strong === this.cpuCreature.element) { hintText = 'Super efficace!'; hintColor = '#44ff88'; }
+            else if (atkEl && atkEl.weak === this.cpuCreature.element) { hintText = 'Poco efficace...'; hintColor = '#ff8844'; }
+            if (hintText) {
+                UI.text(ctx, hintText, w / 2, h * 0.62, {
+                    color: hintColor, size: 15, bold: true, align: 'center'
+                });
+            }
+        }
+
+        // Cards: 3 stacked buttons
+        const cardW = w - 60;
+        const cardH = 64;
+        const gap = 12;
+        const startY = h * 0.66;
+        const startX = 30;
+
+        for (let i = 0; i < this.ACTIONS.length; i++) {
+            const a = this.ACTIONS[i];
+            const available = this._isActionAvailable(a.id);
+            const selected = i === this.selectIndex;
+            const y = startY + i * (cardH + gap);
+
+            // Background
+            ctx.fillStyle = !available ? 'rgba(40,40,60,0.5)'
+                          : selected ? 'rgba(160,160,255,0.25)'
+                          : 'rgba(20,20,50,0.75)';
+            UI.roundRect(ctx, startX, y, cardW, cardH, 14);
+            ctx.fill();
+            ctx.strokeStyle = selected ? a.color : 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = selected ? 3 : 1.5;
+            UI.roundRect(ctx, startX, y, cardW, cardH, 14);
+            ctx.stroke();
+
+            // Icon
+            ctx.font = '28px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(a.icon, startX + 36, y + 42);
+
+            // Label + hint
+            UI.text(ctx, a.label + (available ? '' : '  (usato)'), startX + 72, y + 26, {
+                color: available ? '#fff' : '#888', size: 18, bold: true
+            });
+            if (a.hint && available) {
+                UI.text(ctx, a.hint(this.playerCreature), startX + 72, y + 48, {
+                    color: '#bbb', size: 13
+                });
+            }
+        }
+    },
+
+    // ─── RENDER: ELEMENT PICK ───
+    _renderElementPick(ctx, w, h) {
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(0, h * 0.5, w, h * 0.5);
+        UI.text(ctx, 'SCEGLI ELEMENTO', w / 2, h * 0.58, {
+            color: '#ffcc00', size: 24, bold: true, align: 'center'
+        });
+        UI.text(ctx, 'Tocca Indietro per annullare', w / 2, h * 0.63, {
+            color: '#889', size: 13, align: 'center'
+        });
+
+        const elementIds = Object.keys(Creatures.ELEMENTS);
+        const btnSize = 96;
+        const gap = 10;
+        const totalW = btnSize * elementIds.length + gap * (elementIds.length - 1);
+        const startX = (w - totalW) / 2;
+        const btnY = h * 0.68;
+
+        for (let i = 0; i < elementIds.length; i++) {
+            const el = Creatures.ELEMENTS[elementIds[i]];
+            const bx = startX + i * (btnSize + gap);
+            const selected = i === this.selectIndex;
+
+            ctx.fillStyle = selected ? el.color : 'rgba(20,20,50,0.8)';
+            UI.roundRect(ctx, bx, btnY, btnSize, btnSize, 14);
+            ctx.fill();
+            ctx.strokeStyle = selected ? '#fff' : 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = selected ? 3 : 1.5;
+            UI.roundRect(ctx, bx, btnY, btnSize, btnSize, 14);
+            ctx.stroke();
+
+            ctx.font = '36px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(el.icon, bx + btnSize / 2, btnY + btnSize * 0.55);
+            UI.text(ctx, el.name, bx + btnSize / 2, btnY + btnSize - 10, {
+                color: '#fff', size: 12, bold: true, align: 'center'
             });
         }
     },
