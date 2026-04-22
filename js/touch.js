@@ -22,6 +22,9 @@ const Touch = {
     // NPC interaction flag (only talk when explicitly tapped)
     _tappedNpc: false,
 
+    // Settings slider drag state (key of the setting being dragged, or null)
+    _sliderDrag: null,
+
     // Swipe detection
     _swipeStartX: 0,
     _swipeStartY: 0,
@@ -60,10 +63,12 @@ const Touch = {
                 const pos = this._getMousePos(e);
                 this._holdX = pos.x;
                 this._holdY = pos.y;
+                if (this._sliderDrag && Debug.active) this._updateSliderFromPos(pos);
             }
         });
         canvas.addEventListener('mouseup', e => {
             this._holding = false;
+            this._sliderDrag = null;
         });
     },
 
@@ -110,12 +115,14 @@ const Touch = {
             const pos = this._getCanvasPos(e.touches[0]);
             this._holdX = pos.x;
             this._holdY = pos.y;
+            if (this._sliderDrag && Debug.active) this._updateSliderFromPos(pos);
         }
     },
 
     _onTouchEnd(e) {
         e.preventDefault();
         this._holding = false;
+        this._sliderDrag = null;
     },
 
     _handleTap(pos) {
@@ -546,10 +553,33 @@ const Touch = {
             const iy = startY + vi * itemH;
             if (pos.y >= iy && pos.y <= iy + itemH - 10) {
                 Debug._selectedIndex = i;
-                Input.triggerPress('z');
+                const item = items[i];
+                if (item.type === 'range') {
+                    this._sliderDrag = item.key;
+                    this._updateSliderFromPos(pos);
+                } else {
+                    Input.triggerPress('z');
+                }
                 return;
             }
         }
+    },
+
+    _updateSliderFromPos(pos) {
+        const key = this._sliderDrag;
+        const s = Debug.settings[key];
+        if (!s || s.min === undefined) return;
+        const w = this._canvas.width;
+        const barX = 36;
+        const barW = w - 150;
+        const ratio = Math.max(0, Math.min(1, (pos.x - barX) / barW));
+        const raw = s.min + ratio * (s.max - s.min);
+        const snapped = Math.round((raw - s.min) / s.step) * s.step + s.min;
+        const next = Math.max(s.min, Math.min(s.max, snapped));
+        if (next === s.value) return;
+        s.value = next;
+        Debug._applySettings();
+        Debug._saveSettings();
     },
 
     cancelPath() {
