@@ -1,0 +1,501 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Nunito', 'Fredoka', sans-serif;
+}
+
+/* Phone frame - desktop only */
+#phone-frame {
+    width: 360px;
+    height: 720px;
+    background: #2d2d2d;
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow:
+        0 0 0 3px #1a1a1a,
+        0 0 40px rgba(0, 0, 0, 0.5),
+        inset 0 0 10px rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+#phone-notch {
+    width: 120px;
+    height: 24px;
+    background: #1a1a1a;
+    border-radius: 0 0 16px 16px;
+    margin: 0 auto 4px;
+}
+
+#game-container {
+    width: 100%;
+    height: calc(100% - 28px);
+    background: #000;
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* Smooth rendering — no pixel art */
+}
+
+/* Dialogue box */
+#dialogue-box {
+    position: absolute;
+    bottom: 80px;
+    left: 8px;
+    right: 8px;
+    background: rgba(10, 10, 40, 0.95);
+    border: 2px solid #a0a0ff;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    min-height: 80px;
+    z-index: 10;
+}
+
+#dialogue-portrait {
+    width: 56px;
+    height: 56px;
+    background: #333;
+    border: 2px solid #a0a0ff;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+#dialogue-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#dialogue-name {
+    color: #ffcc00;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+#dialogue-text {
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+#dialogue-next {
+    color: #a0a0ff;
+    font-size: 10px;
+    align-self: flex-end;
+    animation: blink 0.8s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* D-pad */
+#dpad {
+    position: absolute;
+    bottom: 60px;
+    left: 16px;
+    width: 100px;
+    height: 100px;
+    z-index: 20;
+}
+
+.dpad-btn {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.dpad-btn:active {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+#dpad-up { left: 33px; top: 0; }
+#dpad-down { left: 33px; bottom: 0; }
+#dpad-left { left: 0; top: 33px; }
+#dpad-right { right: 0; top: 33px; }
+
+#dpad-center {
+    position: absolute;
+    left: 33px;
+    top: 33px;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+}
+
+/* Action buttons */
+#action-buttons {
+    position: absolute;
+    bottom: 64px;
+    right: 16px;
+    z-index: 20;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.action-btn:active {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+#btn-a {
+    position: absolute;
+    right: 0;
+    bottom: 24px;
+}
+
+#btn-b {
+    position: absolute;
+    right: 36px;
+    bottom: 0;
+}
+
+/* Menu button */
+.menu-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 20;
+}
+
+/* Menu overlay */
+#menu-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 40, 0.97);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    color: #fff;
+}
+
+.menu-title {
+    color: #ffcc00;
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.menu-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.menu-item {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #ccc;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+}
+
+.menu-item:hover,
+.menu-item.selected {
+    background: rgba(160, 160, 255, 0.15);
+    border-color: #a0a0ff;
+    color: #fff;
+}
+
+.menu-back {
+    margin-top: auto;
+    padding: 10px;
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.menu-back:hover {
+    color: #fff;
+}
+
+/* Party member card */
+.party-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.party-avatar {
+    width: 40px;
+    height: 40px;
+    background: #333;
+    border-radius: 4px;
+    border: 1px solid #a0a0ff;
+}
+
+.party-info {
+    flex: 1;
+}
+
+.party-name {
+    color: #ffcc00;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.party-stats {
+    color: #aaa;
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+.party-hp-bar {
+    width: 100%;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.party-hp-fill {
+    height: 100%;
+    background: #4caf50;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+/* Save slots */
+.save-slot {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #ccc;
+    font-size: 12px;
+    text-align: left;
+    width: 100%;
+}
+
+.save-slot:hover {
+    border-color: #a0a0ff;
+    background: rgba(160, 160, 255, 0.1);
+}
+
+.save-slot-empty {
+    color: #555;
+    font-style: italic;
+}
+
+/* Inventory item */
+.inv-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 12px;
+    color: #ccc;
+}
+
+.inv-item-name { color: #fff; }
+.inv-item-qty { color: #ffcc00; }
+
+/* Debug panel - now Canvas-based, old HTML panel hidden */
+#debug-panel {
+    display: none !important;
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(160, 160, 255, 0.1);
+    color: #ffcc00;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.debug-header button {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.debug-body {
+    padding: 12px 16px;
+}
+
+.debug-row {
+    margin-bottom: 14px;
+}
+
+.debug-label {
+    color: #ccc;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.debug-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.debug-slider-row input[type=range] {
+    flex: 1;
+    accent-color: #a0a0ff;
+    height: 4px;
+}
+
+.debug-value {
+    color: #ffcc00;
+    font-size: 11px;
+    min-width: 30px;
+    text-align: right;
+}
+
+.debug-reset {
+    width: 100%;
+    margin-top: 16px;
+    padding: 8px;
+    background: rgba(255, 60, 60, 0.15);
+    border: 1px solid rgba(255, 60, 60, 0.3);
+    border-radius: 6px;
+    color: #f44;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.debug-reset:hover {
+    background: rgba(255, 60, 60, 0.25);
+}
+
+#debug-toggle {
+    position: absolute;
+    top: 8px;
+    right: 44px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 20;
+}
+
+/* Hidden utility */
+.hidden { display: none !important; }
+
+/* Mobile: remove phone frame */
+@media (max-width: 500px) {
+    body {
+        background: #000;
+    }
+
+    #phone-frame {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+        background: #000;
+    }
+
+    #phone-notch {
+        display: none;
+    }
+
+    #game-container {
+        height: 100%;
+        border-radius: 0;
+    }
+}
+
+/* Desktop: hide d-pad and action buttons */
+@media (min-width: 501px) {
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+/* Hide old D-pad when touch controls active (tap/joystick mode) */
+body.touch-tap .mobile-only,
+body.touch-joystick .mobile-only {
+    display: none !important;
+}
+
+/* Menu button always visible on mobile */
+body.touch-tap .menu-btn,
+body.touch-joystick .menu-btn {
+    display: block !important;
+}

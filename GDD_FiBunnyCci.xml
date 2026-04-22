@@ -1,0 +1,734 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<game_design_document>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- META -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <meta>
+    <title>FiBunnyCci JRPG</title>
+    <genre>JRPG Mobile Casual Competitive a Turni</genre>
+    <core_mechanic>Morra Cinese (Sasso/Carta/Forbice)</core_mechanic>
+    <platform>Mobile (iOS/Android), Web</platform>
+    <aesthetic>Toy-like, Friendly</aesthetic>
+    <match_duration>3-5 minuti</match_duration>
+    <monetization>
+      <price>5€</price>
+      <dlc>no</dlc>
+      <microtransactions>no</microtransactions>
+    </monetization>
+    <online_backend>Firebase o PlayFab (da decidere)</online_backend>
+  </meta>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STRUTTURA MATCH -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <match_structure>
+
+    <match>
+      <description>Best of 3 round. Vince chi arriva a 2 round vinti.</description>
+      <rounds_to_win>2</rounds_to_win>
+      <max_rounds>3</max_rounds>
+    </match>
+
+    <round>
+      <description>
+        Ogni round si scontrano 2 creature (1 per giocatore).
+        Il round consiste in massimo 5 turni di morra.
+        Le creature partono con HP pieno a ogni round (reset completo).
+      </description>
+      <max_turns>5</max_turns>
+      <win_conditions>
+        <condition priority="1">
+          <name>KO</name>
+          <description>HP della creatura avversaria arriva a 0. Vittoria immediata del round.</description>
+        </condition>
+        <condition priority="2">
+          <name>Maggioranza Morre</name>
+          <description>Chi vince 3 morre su 5 vince il round.</description>
+          <morra_wins_needed>3</morra_wins_needed>
+        </condition>
+        <condition priority="3">
+          <name>Fine 5 Turni - HP</name>
+          <description>
+            Se dopo 5 turni nessuno ha 3 vittorie morra e nessun KO,
+            vince chi ha più HP.
+          </description>
+        </condition>
+        <condition priority="4">
+          <name>Sudden Death</name>
+          <status>DA IMPLEMENTARE</status>
+          <description>
+            Se dopo 5 turni le morre sono pari E gli HP sono uguali,
+            si gioca 1 turno morra secco. Chi vince attacca e chiude.
+            Se ancora pareggio, re-roll immediato fino a vincitore.
+            Nessun balletto, solo tensione.
+          </description>
+        </condition>
+      </win_conditions>
+    </round>
+
+    <turn>
+      <description>
+        Singolo scambio di morra. Entrambi i giocatori scelgono
+        simultaneamente sasso/carta/forbice. Timer per la scelta.
+        Reveal animato. Chi vince morra attacca, chi perde subisce.
+      </description>
+      <timer>
+        <status>DA IMPLEMENTARE</status>
+        <description>Timer per la scelta simultanea della morra</description>
+      </timer>
+      <choices>
+        <choice id="0" name="Carta">Batte Sasso</choice>
+        <choice id="1" name="Sasso">Batte Forbice</choice>
+        <choice id="2" name="Forbice">Batte Carta</choice>
+      </choices>
+      <outcomes>
+        <outcome name="Vittoria">
+          <description>Il vincitore della morra attacca l'avversario.</description>
+          <attacker>Chi ha vinto la morra</attacker>
+          <defender>Chi ha perso la morra</defender>
+        </outcome>
+        <outcome name="Pareggio">
+          <description>
+            Turno nullo. Non conta come turno giocato.
+            Le creature fanno un balletto simpatico.
+            Le barre HP riappaiono dopo 0.4s.
+          </description>
+          <counts_as_turn>false</counts_as_turn>
+        </outcome>
+      </outcomes>
+    </turn>
+
+  </match_structure>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FASE PRE-MATCH: SELEZIONE UNITÀ -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <unit_selection>
+    <description>
+      A inizio di ogni round, entrambi i giocatori vedono le 3 creature
+      del team avversario (sanno CHI ha) ma non sanno quale schierà.
+      La scelta è simultanea. Riuso della stessa creatura tra round è permesso.
+      Ogni creatura riparte con HP pieno ad ogni round.
+    </description>
+    <team_size>3</team_size>
+    <selection_type>simultanea e cieca</selection_type>
+    <creature_reuse>
+      <allowed>true</allowed>
+      <hp_reset>true</hp_reset>
+      <oneshot_resources_persist>
+        Le risorse one-shot già spese NON tornano tra round.
+        (Da implementare: buff e cambio elemento)
+      </oneshot_resources_persist>
+    </creature_reuse>
+    <ui>
+      <player_buttons>3 bottoni con icona/immagine della propria creatura</player_buttons>
+      <cpu_previews>3 preview delle creature avversarie (visibili ma non cliccabili)</cpu_previews>
+      <animation>
+        Bottoni CPU scendono dall'alto, bottoni Player salgono dal basso.
+        Stagger di 0.07s tra ogni bottone. Easing: OutBack. Durata: 0.35s.
+        Titolo "SELECT UNIT" fa pop scale da 0.5 a 1.0.
+      </animation>
+    </ui>
+  </unit_selection>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- DECK BUILDING (FUORI MATCH) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <deck_building>
+    <status>DA IMPLEMENTARE</status>
+    <description>
+      Il giocatore assembla un team di 3 creature fuori dal match.
+      Ogni creatura è definita dalla combinazione di 3 elementi:
+      animale, elemento, arma.
+    </description>
+
+    <animals>
+      <description>12 animali dello Zodiaco Cinese</description>
+      <animal>Topo</animal>
+      <animal>Bue</animal>
+      <animal>Tigre</animal>
+      <animal>Coniglio</animal>
+      <animal>Drago</animal>
+      <animal>Serpente</animal>
+      <animal>Cavallo</animal>
+      <animal>Capra</animal>
+      <animal>Scimmia</animal>
+      <animal>Gallo</animal>
+      <animal>Cane</animal>
+      <animal>Maiale</animal>
+    </animals>
+
+    <elements>
+      <description>
+        5 elementi del Feng Shui. Determinano matchup di danno.
+        Il vantaggio elemento pesa di più quando vinci la morra,
+        meno quando la perdi.
+      </description>
+      <element name="Fuoco">
+        <strong_against>Metallo</strong_against>
+        <weak_against>Acqua</weak_against>
+      </element>
+      <element name="Acqua">
+        <strong_against>Fuoco</strong_against>
+        <weak_against>Terra</weak_against>
+      </element>
+      <element name="Terra">
+        <strong_against>Acqua</strong_against>
+        <weak_against>Legno</weak_against>
+      </element>
+      <element name="Legno">
+        <strong_against>Terra</strong_against>
+        <weak_against>Metallo</weak_against>
+      </element>
+      <element name="Metallo">
+        <strong_against>Legno</strong_against>
+        <weak_against>Fuoco</weak_against>
+      </element>
+      <status>DA IMPLEMENTARE nel calcolo danno</status>
+    </elements>
+
+    <weapons>
+      <description>
+        Arma equipaggiabile che modifica le stat base della creatura.
+      </description>
+      <weapon name="Spada a Due Mani">
+        <role>DPS</role>
+        <stat_bonus>Alto ATK, basso DEF</stat_bonus>
+      </weapon>
+      <weapon name="Spada e Scudo">
+        <role>Tank</role>
+        <stat_bonus>Alto DEF, medio ATK</stat_bonus>
+      </weapon>
+      <weapon name="Tirapugni">
+        <role>Crit/Evasione</role>
+        <stat_bonus>Alto Crit Chance, alta Evasion Chance</stat_bonus>
+      </weapon>
+      <status>DA IMPLEMENTARE come modifier delle stat</status>
+    </weapons>
+
+    <change_element_move>
+      <description>
+        Nel deck building il giocatore sceglie un tipo alternativo
+        per la creatura. Durante il match, la risorsa one-shot
+        "cambio elemento" switcha al tipo pre-scelto.
+      </description>
+      <status>DA IMPLEMENTARE</status>
+    </change_element_move>
+  </deck_building>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CREATURE STATS -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <creature_stats>
+    <stat name="creatureName" type="string">Nome della creatura</stat>
+    <stat name="maxHp" type="int" default="100">Punti vita massimi</stat>
+    <stat name="currentHp" type="int">Punti vita correnti (runtime)</stat>
+    <stat name="atk" type="int" default="20">Forza d'attacco</stat>
+    <stat name="def" type="int" default="10">Difesa</stat>
+    <stat name="critChance" type="float" range="0-1" default="0.1">
+      Probabilità di colpo critico (0.0 = 0%, 1.0 = 100%)
+    </stat>
+    <stat name="evasionChance" type="float" range="0-1" default="0.05">
+      Probabilità di schivata (0.0 = 0%, 1.0 = 100%)
+    </stat>
+
+    <init_behavior>
+      All'inizio di ogni round, currentHp viene resettato a maxHp.
+    </init_behavior>
+  </creature_stats>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SISTEMA DI COMBATTIMENTO -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <combat_system>
+
+    <damage_formula>
+      <description>
+        Calcolo danno quando l'attaccante vince la morra.
+        L'ordine di risoluzione è: evasione → danno base → crit.
+      </description>
+
+      <step order="1" name="Evasione">
+        <check>random(0,1) &lt; defender.evasionChance</check>
+        <if_true>Danno = 0. Nessun attacco va a segno.</if_true>
+        <if_false>Procedi al calcolo danno.</if_false>
+      </step>
+
+      <step order="2" name="Danno Base">
+        <formula>damage = attacker.atk - (defender.def * 0.5)</formula>
+        <minimum>1 (il danno non può essere inferiore a 1)</minimum>
+      </step>
+
+      <step order="3" name="Critico">
+        <check>random(0,1) &lt; attacker.critChance</check>
+        <if_true>damage = damage * 2</if_true>
+      </step>
+
+      <step order="4" name="Arrotondamento">
+        <formula>damage = round(damage)</formula>
+      </step>
+
+      <step order="5" name="Applicazione">
+        <formula>defender.currentHp = max(0, defender.currentHp - damage)</formula>
+      </step>
+    </damage_formula>
+
+    <element_modifier>
+      <status>DA IMPLEMENTARE</status>
+      <description>
+        Il vantaggio elemento modifica il danno.
+        Pesa di più se vinci la morra (bonus attacco),
+        meno se perdi (riduzione danno subito).
+        Ciclo: Fuoco→Metallo→Legno→Terra→Acqua→Fuoco
+      </description>
+    </element_modifier>
+
+    <combat_outcomes>
+      <outcome name="Danno Normale">
+        <condition>Attaccante vince morra, no crit, no evasione</condition>
+        <attacker_animation>win</attacker_animation>
+        <defender_animation>lose</defender_animation>
+        <text_feedback>VINCI! -{damage} / PERDI! -{damage}</text_feedback>
+      </outcome>
+      <outcome name="Critico">
+        <condition>Attaccante vince morra, crit check positivo</condition>
+        <attacker_animation>crit</attacker_animation>
+        <defender_animation>lose</defender_animation>
+        <text_feedback>CRITICO! -{damage}</text_feedback>
+        <damage_multiplier>2x</damage_multiplier>
+      </outcome>
+      <outcome name="Schivata">
+        <condition>Attaccante vince morra, difensore evade</condition>
+        <attacker_animation>win</attacker_animation>
+        <defender_animation>evas</defender_animation>
+        <text_feedback>SCHIVATA!</text_feedback>
+        <damage>0</damage>
+        <note>L'attaccante vince comunque la morra (conta per il 3/5)</note>
+      </outcome>
+      <outcome name="Pareggio">
+        <condition>Entrambi giocano la stessa mossa</condition>
+        <player1_animation>draw</player1_animation>
+        <player2_animation>draw</player2_animation>
+        <text_feedback>PAREGGIO!</text_feedback>
+        <damage>0</damage>
+        <counts_as_turn>false</counts_as_turn>
+      </outcome>
+    </combat_outcomes>
+
+  </combat_system>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- RISORSE ONE-SHOT (PER CREATURA, PER MATCH) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <oneshot_resources>
+    <description>
+      Ogni creatura ha risorse one-shot che possono essere usate una sola
+      volta durante il match. Se la creatura viene rischierata in un round
+      successivo, le risorse già spese NON tornano. L'attivazione è
+      istantanea e non rallenta il flow.
+    </description>
+
+    <resource name="Buff Stat">
+      <status>DA IMPLEMENTARE</status>
+      <cost>HP immediato (il giocatore paga HP per attivarlo)</cost>
+      <effect>Boost permanente a una stat (ATK, DEF, crit, evasion)</effect>
+      <duration>Fino a fine round (non match)</duration>
+      <uses_per_creature>1</uses_per_creature>
+      <timing>Attivabile durante la scelta della morra</timing>
+    </resource>
+
+    <resource name="Cambio Elemento">
+      <status>DA IMPLEMENTARE</status>
+      <cost>Gratuito</cost>
+      <effect>Switcha l'elemento della creatura al tipo pre-scelto nel deck building</effect>
+      <uses_per_creature>1</uses_per_creature>
+      <timing>Attivabile durante la scelta della morra</timing>
+      <note>Il tipo alternativo viene deciso in fase di deck building, non in match</note>
+    </resource>
+  </oneshot_resources>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLUSSO DI GIOCO DETTAGLIATO -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <game_flow>
+
+    <phase name="Start Match">
+      <step>Reset contatori: playerRoundWins=0, cpuRoundWins=0</step>
+      <step>Vai a Unit Selection</step>
+    </phase>
+
+    <phase name="Unit Selection">
+      <step>Mostra pannello selezione unità</step>
+      <step>Nascondi modelli 3D creature e barre HP</step>
+      <step>Mostra 3 bottoni player (le proprie creature) + 3 preview CPU</step>
+      <step>Animazione UI: bottoni entrano con slide + bounce</step>
+      <step>Camera: vai a posizione panoramica (GoToSelectUnit)</step>
+      <step>Player sceglie 1 creatura → CPU sceglie 1 creatura (random)</step>
+      <step>Init HP pieno per entrambe le creature scelte</step>
+      <step>Attiva modelli 3D delle 2 creature scelte</step>
+      <step>Vai a Start Round</step>
+    </phase>
+
+    <phase name="Start Round">
+      <step>Reset: currentTurn=0, playerMorraWins=0, cpuMorraWins=0</step>
+      <step>Camera: zoom in sulla posizione fight (GoToFight)</step>
+      <step>Aggiorna barre HP (immediate, visibili)</step>
+      <step>Mostra "TAP TO PLAY"</step>
+      <step>Nota: al primo turno del round NON si fa il camera cut</step>
+    </phase>
+
+    <phase name="Tap to Play">
+      <step>Player tocca lo schermo</step>
+      <step>Camera: cut alla camera fight + tilt 4° in su (CutToFight)</step>
+      <step>Nascondi "TAP TO PLAY"</step>
+      <step>Mostra UI morra (bottoni Sasso/Carta/Forbice)</step>
+      <step>Animazione UI: bottoni pop bounce (scale 0.8→1.0, stagger 0.06s)</step>
+      <step>Nascondi barre HP</step>
+    </phase>
+
+    <phase name="Scelta Morra">
+      <step>Player sceglie Sasso, Carta o Forbice (con timer da implementare)</step>
+      <step>Può anche attivare Buff o Cambio Elemento (da implementare)</step>
+      <step>CPU sceglie la sua mossa</step>
+      <step>Camera: GoBackDown (tilt da -4° torna a posizione standard, 0.4s)</step>
+      <step>Nascondi UI morra</step>
+      <step>Entrambe le creature eseguono animazione della mossa scelta</step>
+    </phase>
+
+    <phase name="Reveal e Risoluzione">
+      <timeline>
+        <event at="0.0s">Animazioni mossa (carta/sasso/forbice) partono</event>
+        <event at="0.5s">Animazioni mossa si fermano, reset bool morra</event>
+        <event at="0.8s">Animator torna a Idle</event>
+        <event at="0.8s">CheckWin: determina vincitore, calcola danno, set animazioni risultato</event>
+        <event at="0.8s">Mostra testo feedback (VINCI/PERDI/CRITICO/SCHIVATA/PAREGGIO)</event>
+        <event at="1.2s">Barre HP riappaiono con valore aggiornato (delay 0.4s)</event>
+        <event at="2.3s">Animazioni risultato si fermano, reset tutti i bool</event>
+        <event at="2.3s">Testo feedback scompare</event>
+        <event at="2.8s">MatchManager.OnTurnEnd() viene chiamato</event>
+      </timeline>
+    </phase>
+
+    <phase name="Valutazione Fine Turno">
+      <step>Se pareggio: turno nullo, non contare. Vai a "Tra i Turni".</step>
+      <step>Se non pareggio: incrementa currentTurn e contatore morra del vincitore.</step>
+      <step>Check KO: se currentHp di qualcuno ≤ 0 → Camera GoToKO, chiudi round.</step>
+      <step>Check maggioranza morre: se playerMorraWins ≥ 3 o cpuMorraWins ≥ 3 → chiudi round.</step>
+      <step>Check 5 turni: se currentTurn ≥ 5 → chi ha più HP vince round. Se HP uguali → Sudden Death.</step>
+      <step>Se nessuna condizione soddisfatta: vai a "Tra i Turni".</step>
+    </phase>
+
+    <phase name="Tra i Turni">
+      <step>Camera: CutToBetweenTurns (camera alternativa)</step>
+      <step>CutReference si resetta e anima verso posizione MainReference</step>
+      <step>Animazione camera random tra 4 varianti:
+        - Rotazione Y da sinistra (-offset → 0)
+        - Rotazione Y da destra (+offset → 0)
+        - Slide dal basso (posY - offset → posY)
+        - Zoom in da lontano (posZ - offset → posZ)
+      </step>
+      <step>Offset configurabile: rotationOffset=12°, positionOffsetY=0.5, positionOffsetZ=0.8</step>
+      <step>Durata animazione: cutDuration=0.6s</step>
+      <step>Mostra "TAP TO PLAY"</step>
+      <step>Torna a fase "Tap to Play"</step>
+    </phase>
+
+    <phase name="Fine Round">
+      <step>Mostra testo "Player vince il round! (X-Y)" o "CPU vince il round! (X-Y)"</step>
+      <step>Camera: GoToPlayerWin o GoToCpuWin</step>
+      <step>Incrementa playerRoundWins o cpuRoundWins</step>
+      <step>Check vittoria match: se roundWins ≥ 2 → vai a Fine Match</step>
+      <step>Se match non finito: dopo 2 secondi, torna a Unit Selection</step>
+    </phase>
+
+    <phase name="Fine Match">
+      <step>Mostra "VITTORIA!" o "SCONFITTA!"</step>
+      <step>TODO: schermata vittoria/sconfitta con bottone "Gioca ancora"</step>
+    </phase>
+
+  </game_flow>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- UI LAYOUT -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <ui_layout>
+
+    <screen name="Unit Selection">
+      <element name="CPU Unit Previews" position="top">
+        3 icone/immagini delle creature avversarie (non cliccabili)
+      </element>
+      <element name="Player Unit Buttons" position="center">
+        3 bottoni con icona creatura del player (cliccabili)
+      </element>
+      <element name="Winner Text" position="center-bottom">
+        Testo risultato round precedente
+      </element>
+      <element name="SELECT UNIT" position="bottom">
+        Titolo/label
+      </element>
+    </screen>
+
+    <screen name="Combat">
+      <element name="HP Bar Player 1" position="top-left">
+        Barra vita player (Image con fillAmount)
+      </element>
+      <element name="HP Bar Player 2" position="top-right">
+        Barra vita CPU (Image con fillAmount)
+      </element>
+      <element name="Timer" position="top-center">
+        Timer per la scelta morra (da implementare)
+      </element>
+      <element name="Creature Models" position="center">
+        Modelli 3D/sprite delle 2 creature in campo
+      </element>
+      <element name="Player Morra Winner" position="center">
+        Testo feedback turno (VINCI/PERDI/CRITICO/SCHIVATA/PAREGGIO)
+      </element>
+      <element name="TAP TO PLAY" position="bottom">
+        Prompt per iniziare il turno
+      </element>
+    </screen>
+
+    <screen name="Morra Input">
+      <element name="Sasso" position="bottom-left">Bottone morra</element>
+      <element name="Carta" position="bottom-center">Bottone morra</element>
+      <element name="Forbice" position="bottom-right">Bottone morra</element>
+      <element name="Elemento" position="bottom-far-left">
+        Bottone one-shot cambio elemento (da implementare)
+      </element>
+      <element name="Buff" position="bottom-far-right">
+        Bottone one-shot buff stat (da implementare)
+      </element>
+      <element name="PREMI LA MORRA" position="center-bottom">Label</element>
+      <element name="TURNO" position="center">Indicatore turno corrente</element>
+    </screen>
+
+  </ui_layout>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- ANIMAZIONI -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <animations>
+
+    <creature_animations>
+      <state name="Idle">Stato base, loop. Tutte le transizioni partono da qui.</state>
+      <state name="AttaccoCarta">Animazione mossa Carta</state>
+      <state name="AttaccoSasso">Animazione mossa Sasso</state>
+      <state name="AttaccoForbici">Animazione mossa Forbice</state>
+      <state name="Win">Vittoria morra, danno normale inflitto</state>
+      <state name="Lose">Sconfitta morra, danno subito</state>
+      <state name="Crit">Colpo critico inflitto (al posto di Win)</state>
+      <state name="Evas">Schivata riuscita (al posto di Lose)</state>
+      <state name="Draw">Pareggio morra, balletto simpatico</state>
+      <state name="Death">Creatura KO (HP=0)</state>
+
+      <animator_parameters>
+        <param name="sasso" type="bool"/>
+        <param name="carta" type="bool"/>
+        <param name="forbice" type="bool"/>
+        <param name="win" type="bool"/>
+        <param name="lose" type="bool"/>
+        <param name="crit" type="bool"/>
+        <param name="evas" type="bool"/>
+        <param name="draw" type="bool"/>
+        <param name="death" type="bool"/>
+      </animator_parameters>
+
+      <transition_flow>
+        Entry → Idle
+        Idle → AttaccoCarta (when carta=true)
+        Idle → AttaccoSasso (when sasso=true)
+        Idle → AttaccoForbici (when forbice=true)
+        AttaccoCarta → Idle (when carta=false)
+        AttaccoSasso → Idle (when sasso=false)
+        AttaccoForbici → Idle (when forbice=false)
+        Idle → Win (when win=true)
+        Idle → Lose (when lose=true)
+        Idle → Crit (when crit=true)
+        Idle → Evas (when evas=true)
+        Idle → Draw (when draw=true)
+        Idle → Death (when death=true)
+        Win/Lose/Crit/Evas/Draw → Idle (when respective bool=false)
+      </transition_flow>
+
+      <critical_note>
+        Le transizioni Win/Lose/Crit/Evas/Draw partono SOLO da Idle.
+        Quindi bisogna prima resettare i bool morra, aspettare che
+        l'Animator torni a Idle, e SOLO POI settare i bool risultato.
+      </critical_note>
+    </creature_animations>
+
+    <ui_animations>
+      <animation name="Select Unit Buttons">
+        CPU: slide dall'alto (slideDistance=300, duration=0.35s, stagger=0.07s, easeOutBack)
+        Player: slide dal basso (stessi parametri)
+        Titolo: pop scale 0.5→1.0 (easeOutBack)
+      </animation>
+      <animation name="Morra Buttons">
+        Pop bounce: scale originalScale*0.8 → originalScale
+        Stagger 0.06s tra Sasso/Carta/Forbice
+        Duration 0.25s, easeOutQuad
+      </animation>
+      <animation name="HP Bars">
+        Nascoste quando appare UI morra.
+        Riappaiono con delay 0.4s dopo il risultato.
+      </animation>
+    </ui_animations>
+
+    <camera_animations>
+      <animation name="GoToSelectUnit">
+        LeanTween move+rotate di MainReference alla posizione panoramica.
+        Duration: 0.8s, easeInOutSine.
+      </animation>
+      <animation name="GoToFight">
+        LeanTween move+rotate di MainReference alla posizione fight.
+        Duration: 0.6s, easeInOutSine.
+      </animation>
+      <animation name="CutToFight (Tap)">
+        Disattiva CameraCut, attiva CameraMain.
+        MainReference tilt X -4° (guarda leggermente in su).
+        Resta in questa posizione fino a scelta morra.
+      </animation>
+      <animation name="GoBackDown (Scelta Morra)">
+        MainReference torna alla rotazione fight standard.
+        Duration: 0.4s, easeOutSine.
+      </animation>
+      <animation name="CutToBetweenTurns">
+        Disattiva CameraMain, attiva CameraCut.
+        CutReference parte da posizione offset (random tra 4 varianti).
+        Anima verso posizione di MainReference.
+        Duration: cutDuration (0.6s), easeInOutSine.
+      </animation>
+    </camera_animations>
+
+  </animations>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SISTEMA CAMERA (3D) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <camera_system>
+    <description>
+      Due virtual camera Cinemachine + due reference transform (cubi).
+      Le virtual camera seguono i reference. Il CameraController muove
+      i reference con LeanTween e alterna le camera con SetActive.
+      Il Cinemachine Brain sulla Main Camera ha Default Blend = Cut.
+    </description>
+
+    <camera name="CameraMain">
+      <follows>MainReference</follows>
+      <usage>Camera principale per fight e selezione</usage>
+    </camera>
+    <camera name="CameraCut">
+      <follows>CutReference</follows>
+      <usage>Camera alternativa per transizioni tra turni</usage>
+      <starts_disabled>true</starts_disabled>
+    </camera>
+
+    <reference name="MainReference">
+      <position x="0" y="-0.7973" z="3.78"/>
+      <rotation x="22.51" y="0" z="0"/>
+      <description>Posizione standard di combattimento. Non si muove durante il match.</description>
+    </reference>
+    <reference name="CutReference">
+      <position>Stessa di MainReference (target)</position>
+      <rotation>Stessa di MainReference (target)</rotation>
+      <description>
+        Parte da posizione offset, anima verso MainReference.
+        Viene resettato ogni volta che si attiva CameraCut.
+      </description>
+    </reference>
+  </camera_system>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- MINDGAME / STRATEGIC DEPTH -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <mindgame>
+    <layer name="Lettura Morra">
+      Pattern recognition dell'avversario nella scelta sasso/carta/forbice.
+      Adattamento in tempo reale.
+    </layer>
+    <layer name="Timing Risorse One-Shot">
+      Quando usare il buff (paghi HP) e quando cambiare elemento.
+      Usarli troppo presto spreca opportunità, troppo tardi rischi di perdere.
+    </layer>
+    <layer name="Prediction Riuso Creatura">
+      L'avversario rischiera la stessa creatura? Le risorse one-shot
+      saranno già spese. Controbilanciare con scelta unità.
+    </layer>
+    <layer name="Team Composition">
+      Sinergia tra le 3 creature del team: copertura elementi,
+      bilanciamento DPS/tank/crit, preparazione matchup.
+    </layer>
+    <layer name="Elemento Matchup">
+      Scegliere la creatura con vantaggio elementale.
+      Il cambio elemento one-shot aggiunge imprevedibilità.
+    </layer>
+  </mindgame>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- ARCHITETTURA SOFTWARE (UNITY) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <architecture>
+    <description>
+      Architettura attuale dell'implementazione Unity.
+      Utile come riferimento per il porting webapp.
+    </description>
+
+    <script name="MatchManager">
+      <responsibility>Orchestra il match: scelta unità, turni, round, win condition</responsibility>
+      <manages>Round wins, morra wins, turn counter, unit selection</manages>
+      <calls>TapMachine, CameraController, UIAnimator</calls>
+    </script>
+
+    <script name="TapMachine">
+      <responsibility>Gestisce la singola morra: input, animazioni, danno, barre HP</responsibility>
+      <manages>Player move, animation sequencing, damage calculation, HP bars</manages>
+      <calls>AiCpu, MatchManager.OnTurnEnd(), CameraController, MorraUIAnimator</calls>
+    </script>
+
+    <script name="CreatureStats">
+      <responsibility>Dati stat di una creatura + formula danno</responsibility>
+      <manages>HP, ATK, DEF, critChance, evasionChance, CalculateDamage()</manages>
+      <serializable>true (inline nell'Inspector)</serializable>
+    </script>
+
+    <script name="AiCpu">
+      <responsibility>Scelta mossa AI</responsibility>
+      <current_implementation>Lista pre-scripted dall'Inspector</current_implementation>
+      <todo>AI intelligente (pattern matching, random pesato)</todo>
+    </script>
+
+    <script name="CameraController">
+      <responsibility>Gestione camera: LeanTween transitions + Cinemachine cuts</responsibility>
+      <attached_to>MainReference (ex ZoomInReference)</attached_to>
+    </script>
+
+    <script name="UIAnimator">
+      <responsibility>Animazioni UI select unit (slide + bounce)</responsibility>
+      <attached_to>GAMEMANAGER</attached_to>
+    </script>
+
+    <script name="MorraUIAnimator">
+      <responsibility>Animazioni UI bottoni morra (pop bounce)</responsibility>
+      <attached_to>Input (parent dei bottoni morra)</attached_to>
+    </script>
+  </architecture>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TODO LIST -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <todo>
+    <item priority="1">Sistema Elementi (feng shui cycle nel calcolo danno)</item>
+    <item priority="2">Buff one-shot (costo HP, boost stat, dura fino a fine round)</item>
+    <item priority="3">Cambio Elemento one-shot (switch a tipo pre-scelto nel deck)</item>
+    <item priority="4">Sudden Death (1 turno morra secco se pareggio totale)</item>
+    <item priority="5">Schermata vittoria/sconfitta (pannello in-scene)</item>
+    <item priority="6">Deck Building / Setter personaggi (menu pre-match)</item>
+    <item priority="7">Timer morra (scelta simultanea con countdown)</item>
+    <item priority="8">AI vera (non pre-scripted)</item>
+    <item priority="9">Animazione Death (death bool nell'Animator, non usato)</item>
+    <item priority="10">Porting online (Firebase/PlayFab: matchmaking, reveal simultaneo, anti-cheat)</item>
+  </todo>
+
+</game_design_document>

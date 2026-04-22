@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FiBunnyCci JRPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="phone-frame">
+        <div id="phone-notch"></div>
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+            <!-- Dialogue is now rendered on Canvas, not HTML -->
+            <div id="dialogue-box" style="display:none"></div>
+            <div id="menu-overlay" class="hidden"></div>
+            <!-- D-pad hidden by default, only for keyboard fallback -->
+            <div id="dpad" class="mobile-only" style="display:none">
+                <button id="dpad-up" class="dpad-btn">▲</button>
+                <button id="dpad-left" class="dpad-btn">◀</button>
+                <button id="dpad-right" class="dpad-btn">▶</button>
+                <button id="dpad-down" class="dpad-btn">▼</button>
+                <div id="dpad-center"></div>
+            </div>
+            <div id="action-buttons" class="mobile-only" style="display:none">
+                <button id="btn-a" class="action-btn">A</button>
+                <button id="btn-b" class="action-btn">B</button>
+            </div>
+            <!-- Menu button removed — menu accessed via tap/keyboard only -->
+        </div>
+    </div>
+
+    <script>
+    // Global error handler for debugging
+    window.onerror = function(msg, url, line, col, error) {
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:8px;font-size:10px;z-index:99999;word-break:break-all;';
+        errDiv.textContent = msg + ' at ' + url.split('/').pop() + ':' + line;
+        document.body.appendChild(errDiv);
+        setTimeout(() => errDiv.remove(), 10000);
+    };
+    </script>
+    <script src="js/ui.js?v=20"></script>
+    <script src="js/input.js?v=20"></script>
+    <script src="js/touch.js?v=20"></script>
+    <script src="js/audio.js?v=20"></script>
+    <script src="js/save.js?v=20"></script>
+    <script src="js/creatures.js?v=20"></script>
+    <script src="js/map.js?v=20"></script>
+    <script src="js/player.js?v=20"></script>
+    <script src="js/npc.js?v=20"></script>
+    <script src="js/dialogue.js?v=20"></script>
+    <script src="js/menu.js?v=20"></script>
+    <script src="js/combat.js?v=20"></script>
+    <script src="js/tris.js?v=20"></script>
+    <script src="js/titlescreen.js?v=20"></script>
+    <script src="js/worldmap.js?v=20"></script>
+    <script src="js/teambuilder.js?v=20"></script>
+    <script src="js/debug.js?v=20"></script>
+    <script src="js/engine.js?v=20"></script>
+</body>
+</html>

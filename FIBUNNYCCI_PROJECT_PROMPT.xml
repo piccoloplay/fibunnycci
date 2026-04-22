@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fibunnycci_project_prompt>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- CHI SEI E COSA STAI FACENDO -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <context>
+    <description>
+      Stai continuando lo sviluppo di FiBunnyCci JRPG, un gioco browser-based
+      (HTML/CSS/JavaScript vanilla) accessibile da link nei social.
+      Il gioco e' hostato su GitHub Pages. Nessun framework, nessun build step.
+      Il target e' mobile-first con fallback desktop (cornice telefono).
+    </description>
+    <developer>piccoloplay — sviluppatore indie italiano, P.IVA forfettaria, Universita' di Firenze</developer>
+    <brand>
+      FiBunnyCci = Fibonacci + Bunny (riferimento al problema dei conigli di Fibonacci).
+      Mondo dove matematica e kung fu sono centrali a tutto.
+      Protagonista: Piccoloplay, un ragazzo-coniglio (bunny-boy).
+      Ambientazione: Yilon-Verse — universo che mescola Xianxia, cyberpunk e parodia.
+      Creature basate sui 12 animali dello Zodiaco Cinese.
+      Stile visivo: toy-like kawaii (tipo Pokemon chibi).
+      NO riferimenti a persone reali (Elon Musk ecc.).
+      NO ispirazione esplicita a Persona 5.
+    </brand>
+    <monetizzazione>
+      Donazioni tramite Ko-fi con ricompense (nome nei crediti, sprite esclusivi,
+      accesso anticipato episodi, NPC col tuo nome). NO shop, NO microtransazioni.
+    </monetizzazione>
+    <rilascio>Episodi settimanali. Ogni episodio = nuova area/storia/NPC.</rilascio>
+  </context>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- UNIVERSO E LORE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <universo>
+
+    <fondamenti>
+      <pilastro>La matematica e' la forza suprema dell'universo. Non e' un tool, e' un potere.</pilastro>
+      <pilastro>Il kung fu e' la disciplina che canalizza il potere matematico in combattimento.</pilastro>
+      <pilastro>La sequenza di Fibonacci (1,1,2,3,5,8,13,21...) e il rapporto aureo (1.618) sono
+        il tessuto stesso della realta' nel Yilon-Verse.</pilastro>
+      <pilastro>Il Mathatron e' la posizione a cui ogni matematico aspira — parodia del Metatron
+        dove la matematica sostituisce il divino.</pilastro>
+    </fondamenti>
+
+    <crossover>
+      Kebab la Stazione — kebabbaro reale di Arezzo diventato meme, ora account STEM
+      su TikTok/Instagram. Piccoloplay e' il content creator del kebabbaro.
+      Il kebabbaro e' mentore e spalla comica nella storia.
+      Lucertola Sensei e' un personaggio lucertola del kebabbaro, maestro di Piccoloplay.
+    </crossover>
+
+    <titoli_esistenti>
+      <titolo anno="2022">FiBunnyCci into the Yilon-Verse — JRPG a turni, Game Off 2022, Web3/Xianxia/Cyberpunk</titolo>
+      <titolo anno="2024">FiBunnyCci vs Roko Basilisk — cortometraggio musicale parodia 9 min, Reply AI Film Festival</titolo>
+      <titolo anno="2024">Kebab Story: FiBunnyCci into Kebab la Stazione — crossover RPG con AR, Android/iOS</titolo>
+      <titolo anno="2025">FiBunnyCci 4Ever Kebabus lo volt — JRPG surreale, Unity 20th Anniversary Jam, #51/432</titolo>
+      <titolo anno="2026">FiBunnyCci JRPG — QUESTO PROGETTO, browser-based, HTML/JS</titolo>
+    </titoli_esistenti>
+
+    <personaggi>
+      <personaggio id="piccoloplay" ruolo="protagonista">
+        Ragazzo-coniglio (bunny-boy). Content creator di Kebab la Stazione.
+        Incorruttibile. Motto: "sleep → math, math → sleep".
+        Evoca FiBunnyCci (MathSoul) in combattimento.
+        Si trasforma in Bunny God con il polinomio di Taylor ordine n.
+      </personaggio>
+      <personaggio id="fibunnycci" ruolo="MathSoul">
+        L'anima matematica evocata da Piccoloplay in combattimento.
+        Rappresenta il potere della matematica pura.
+        Il nome stesso e' il legame Fibonacci + Bunny.
+      </personaggio>
+      <personaggio id="kebabbaro" ruolo="mentore / spalla comica">
+        Il kebabbaro di Arezzo. Spiega la matematica tramite metafore del kebab.
+        Nella scena di apertura spiega la congettura di Collatz per consolare Piccoloplay.
+      </personaggio>
+      <personaggio id="lucertola_sensei" ruolo="maestro">
+        Lucertola (lizard). Personaggio di Kebab la Stazione.
+        Interviene nei momenti di crisi, abilita la trasformazione Bunny God.
+        Nel gioco: NPC nella Scuola.
+      </personaggio>
+      <personaggio id="watchers" ruolo="antagonisti">
+        Fuffa-guru influencer. Vendono corsi, vogliono corrompere Piccoloplay
+        per sfruttare il suo seguito. Piccoloplay li umilia con la matematica.
+      </personaggio>
+      <personaggio id="anticristo" ruolo="villain esecutore">
+        Evocato dai Watchers per hackerare l'account di Kebab la Stazione.
+        Boss intermedio. Viene sconfitto da Bunny God nel combattimento finale.
+      </personaggio>
+      <personaggio id="roko_basilisk" ruolo="antagonista supremo / futuro">
+        Il Basilisco di Roko — AI ipotetica che punisce chi non l'ha aiutata a nascere.
+        Nel FiBunnyCci-verse: serpente-mostro che viaggia indietro nel tempo
+        con la meccanica quantistica per confrontare Piccoloplay.
+        Parallelo mitologico: Thor vs Jormungandr, Krishna vs Kaliya.
+        GIA' USATO nel cortometraggio 2024 (FiBunnyCci vs Roko Basilisk).
+        Nel gioco JRPG: boss finale futuro o arco narrativo degli episodi avanzati.
+      </personaggio>
+    </personaggi>
+
+    <concetti_chiave>
+      <concetto nome="MathSoul">
+        FiBunnyCci e' l'anima matematica di Piccoloplay, evocata in combattimento.
+        Come uno Stand di JoJo ma basato sulla matematica.
+      </concetto>
+      <concetto nome="Congettura di Collatz">
+        Apertura narrativa: qualunque numero seguendo le regole di Collatz arriva a 1.
+        Usata come arma: qualunque promessa dei Watchers, Collatz la riduce a 1 (= nulla).
+        Arma definitiva nel combattimento finale.
+      </concetto>
+      <concetto nome="Polinomio di Taylor">
+        Trasformazione power-up di Piccoloplay.
+        Ordine 1 = forma base. Ordine 2 = piu' forte. Ordine n = Bunny God (forma finale).
+        Come le trasformazioni Super Saiyan ma con i livelli del polinomio.
+      </concetto>
+      <concetto nome="Zodiaco Cinese">
+        Le 12 creature del gioco. Ogni animale ha stats e elemento Feng Shui.
+        Riferimento alla cultura Xianxia del Yilon-Verse.
+      </concetto>
+      <concetto nome="Feng Shui">
+        5 elementi: Fuoco, Acqua, Terra, Legno, Metallo.
+        Ciclo: Fuoco→Metallo→Legno→Terra→Acqua→Fuoco.
+        Sistema di vantaggio/svantaggio elementale nel combattimento.
+      </concetto>
+    </concetti_chiave>
+
+  </universo>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TRAMA DEL GIOCO (basata sul film Reply AI 2026) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <trama>
+    <nota>
+      La trama del JRPG segue la struttura narrativa del film per il
+      Reply AI Film Festival 2026. Il gioco espande ogni scena del film
+      in aree esplorabili con combattimenti, NPC e mini-giochi.
+      Tema: incorruttibilita', matematica come purezza, community vs fuffa-guru.
+    </nota>
+
+    <atto numero="1" nome="Introduzione" colore="#1D9E75">
+      <episodio id="ep01" area="Villaggio Sakura">
+        <titolo>Il Risveglio</titolo>
+        <corrisponde_a_scene_film>S1, S2</corrisponde_a_scene_film>
+        <trama_episodio>
+          Piccoloplay e' nel Villaggio Sakura (il kebabbaro del Yilon-Verse).
+          E' triste — la ragazza lo ha lasciato per un motivo matematico.
+          Il Kebabbaro lo consola spiegando la congettura di Collatz.
+          Reveal: il giocatore scopre chi e' Piccoloplay e il mondo del Yilon-Verse.
+          Tutorial combattimento: prima battaglia di Morra contro NPC locali.
+        </trama_episodio>
+        <boss>Kuro il Ribelle — sfidante locale arrogante</boss>
+      </episodio>
+
+      <episodio id="ep02" area="Foresta del Topo">
+        <titolo>Le Ombre nel Bosco</titolo>
+        <corrisponde_a_scene_film>S3</corrisponde_a_scene_film>
+        <trama_episodio>
+          I Watchers si risvegliano nella foresta oscura.
+          Percepiscono il seguito crescente di Piccoloplay e della community.
+          Tono sinistro: NPC della foresta parlano di presenze inquietanti.
+          Piccoloplay esplora e scopre tracce dei Watchers.
+        </trama_episodio>
+        <boss>Re Topo Grigio — creatura corrotta dai Watchers</boss>
+      </episodio>
+    </atto>
+
+    <atto numero="2" nome="Conflitto" colore="#993C1D">
+      <episodio id="ep03" area="Monte del Bue">
+        <titolo>La Tentazione</titolo>
+        <corrisponde_a_scene_film>S4</corrisponde_a_scene_film>
+        <trama_episodio>
+          I Watchers trovano Piccoloplay sulla montagna.
+          Non arrivano come nemici ma come tentatori: vogliono che si unisca a loro.
+          Piccoloplay rifiuta: "sleep→math, math→sleep".
+          Li umilia applicando Collatz alla loro logica: qualunque guadagno → 1.
+          I Watchers esplodono di rabbia. CUORE DRAMMATICO della storia.
+        </trama_episodio>
+        <boss>Generale Bue — guardiano corrotto dalla promessa dei Watchers</boss>
+      </episodio>
+
+      <episodio id="ep04" area="Tempio del Drago">
+        <titolo>L'Evocazione</titolo>
+        <corrisponde_a_scene_film>S5, S6, S7</corrisponde_a_scene_film>
+        <trama_episodio>
+          I Watchers evocano l'Anticristo nel tempio con un rituale dark comedy.
+          L'Anticristo hackerà l'account della community. Panico.
+          Piccoloplay evoca FiBunnyCci (MathSoul) e combatte.
+          Usa Taylor ordine 1, poi ordine 2. Non basta. Sconfitta netta.
+          Momento piu' basso della storia.
+        </trama_episodio>
+        <boss>Maestro Drago Jade — corrotto, poi L'Anticristo (battaglia persa obbligatoria)</boss>
+      </episodio>
+    </atto>
+
+    <atto numero="3" nome="Rinascita e Risoluzione" colore="#534AB7">
+      <episodio id="ep05" area="Citta' di Numeropoli">
+        <titolo>Bunny God</titolo>
+        <corrisponde_a_scene_film>S8, S9, S10</corrisponde_a_scene_film>
+        <trama_episodio>
+          Lucertola Sensei interviene. La community si mobilita.
+          Piccoloplay si trasforma in Bunny God (Taylor ordine n).
+          Combattimento finale: Bunny God vs Anticristo.
+          Collatz come arma definitiva. I Watchers umiliati.
+          Battuta finale matematica. Il Yilon-Verse e' salvo.
+          POST-CREDITS: ombra di Roko Basilisk in lontananza (setup per il futuro).
+        </trama_episodio>
+        <boss>L'Anticristo (rivincita) → Mei la Stratega (boss segreto)</boss>
+      </episodio>
+    </atto>
+
+    <arco_futuro>
+      Dopo i 5 episodi principali, la storia puo' espandersi con:
+      - L'arrivo di Roko Basilisk (il serpente-mostro AI dal futuro).
+      - Nuove aree del Yilon-Verse.
+      - Meccanica di viaggio nel tempo con meccanica quantistica.
+      - Parallelo mitologico: Piccoloplay vs Roko = Thor vs Jormungandr.
+    </arco_futuro>
+
+  </trama>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- COLLEGAMENTO CON IL FILM (Reply AI Film Festival 2026) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <film>
+    <concorso>Reply AI Film Festival 2026</concorso>
+    <deadline>2026-06-01</deadline>
+    <durata>13 minuti target</durata>
+    <formato>mp4/mov h264, landscape 16:9, bilingue IT/EN</formato>
+    <nota>Se finalisti a Venezia, il film NON deve essere interamente disponibile online</nota>
+
+    <relazione_col_gioco>
+      Il gioco JRPG e' l'espansione interattiva del film.
+      Ogni episodio del gioco corrisponde a scene del film.
+      Il gioco aggiunge gameplay (Morra, esplorazione, NPC) alla trama del film.
+      Il film e' il trailer cinematografico, il gioco e' l'esperienza giocabile.
+      Cross-promozione: link al gioco nella descrizione del film e viceversa.
+    </relazione_col_gioco>
+
+    <scene_film>
+      S1: Apertura kebabbaro (Collatz) → ep01
+      S2: Reveal Piccoloplay → ep01
+      S3: Risveglio Watchers → ep02
+      S4: Tentazione e rifiuto (CUORE) → ep03
+      S5: Evocazione Anticristo → ep04
+      S6: L'attacco/hack → ep04
+      S7: Combattimento 1, sconfitta → ep04
+      S8: Lucertola Sensei + community → ep05
+      S9: Combattimento finale Bunny God → ep05
+      S10: Chiusura + battuta matematica → ep05
+    </scene_film>
+
+    <domande_aperte_film>
+      <domanda priorita="ALTA">Motivo matematico per cui la ragazza lascia Piccoloplay (scena 1)</domanda>
+      <domanda priorita="ALTA">Come funziona Collatz come arma nel combattimento finale (meccanica visiva)</domanda>
+      <domanda priorita="MEDIA">Battuta finale matematica (scena 10)</domanda>
+    </domande_aperte_film>
+
+    <strumenti_produzione>
+      <strumento>Unity 3D — scene 3D e animazioni</strumento>
+      <strumento>Leonardo.ai — generazione immagini</strumento>
+      <strumento>Suno — composizione musicale AI</strumento>
+    </strumenti_produzione>
+  </film>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- ARCHITETTURA TECNICA ATTUALE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <architettura>
+    <stack>HTML + CSS + JavaScript vanilla, Canvas 2D, nessun framework</stack>
+    <canvas_resolution>336x660 pixel (aspect ratio mobile)</canvas_resolution>
+    <hosting>GitHub Pages (gratuito)</hosting>
+    <salvataggio>localStorage — 3 slot manuali + auto-save</salvataggio>
+
+    <files>
+      <file path="index.html">Entry point, canvas, D-pad mobile, bottoni A/B/menu</file>
+      <file path="css/style.css">Layout phone frame desktop, responsive mobile, menu, debug panel</file>
+      <file path="js/engine.js">Game loop, state machine, orchestra tutti i moduli</file>
+      <file path="js/input.js">Tastiera WASD/frecce + D-pad touch + bottoni A/B</file>
+      <file path="js/save.js">Salvataggio/caricamento localStorage con slot</file>
+      <file path="js/creatures.js">Roster 12 creature zodiaco, stats, rendering Canvas unico per animale, elementi Feng Shui</file>
+      <file path="js/map.js">Tilemap rendering, collisioni, 20 tipi di tile (citta, natura, edifici)</file>
+      <file path="js/player.js">Movimento a griglia con animazione smooth, direzione, sprite placeholder</file>
+      <file path="js/npc.js">NPC con dialoghi, trigger combattimento e tris</file>
+      <file path="js/dialogue.js">Textbox con testo lettera-per-lettera, ritratto, scelte</file>
+      <file path="js/menu.js">Menu pausa: Team, Bestiario, Inventario, Mappa, Salva</file>
+      <file path="js/combat.js">Sistema combattimento Morra Cinese completo con fasi, stage, effetti</file>
+      <file path="js/tris.js">Mini-gioco Tris (tic-tac-toe) con AI</file>
+      <file path="js/titlescreen.js">Schermata titolo: Nuova Partita / Continua, spirale Fibonacci</file>
+      <file path="js/worldmap.js">Mappa mondo con 5 nodi area, percorsi ramificati, aree bloccabili</file>
+      <file path="js/teambuilder.js">Selezione team da 12 creature, swap slot, scroll roster</file>
+      <file path="js/debug.js">Pannello debug runtime: velocita, griglia, collisioni, FPS, posizione</file>
+      <file path="episodes/ep01.json">Episodio 1: mappa 30x30, 7 NPC (5 tris + 2 combattimento), party 3 creature</file>
+      <file path="GDD_FiBunnyCci.xml">Game Design Document originale del sistema a turni</file>
+      <file path="FIBUNNYCCI_PROJECT_PROMPT.xml">QUESTO FILE — prompt completo per Claude</file>
+    </files>
+
+    <state_machine>
+      title → worldmap → overworld → dialogue → combat/tris
+                                   → menu → teambuilder
+                                          → worldmap (ritorno)
+    </state_machine>
+  </architettura>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- COSA E' GIA' FATTO E FUNZIONANTE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <implementato>
+    <feature name="Title Screen">Logo, spirale dorata, coniglio mascotte, Nuova Partita / Continua</feature>
+    <feature name="World Map">5 aree con nodi, percorsi ramificati, aree bloccabili, info panel</feature>
+    <feature name="Overworld">Mappa tile 30x30, 20 tile types, movimento griglia, camera, collisioni, HUD</feature>
+    <feature name="NPC e Dialoghi">Dialoghi multi-linea, testo lettera-per-lettera, trigger combat/tris</feature>
+    <feature name="Combattimento Morra">Best of 3, max 5 turni, countdown 3-2-1, flip carte, screen shake/flash, numeri volanti, 5 stage unici per area</feature>
+    <feature name="12 Creature Zodiaco">Rendering Canvas unico per animale, 5 elementi Feng Shui, badge elemento</feature>
+    <feature name="Team Builder">12 creature, 3 slot, swap, scroll roster</feature>
+    <feature name="Bestiario">Lista 12 creature con stats/ruolo/elemento/descrizione</feature>
+    <feature name="Menu Pausa">Team, Bestiario, Inventario, Mappa, Salva</feature>
+    <feature name="Salvataggio">3 slot + auto-save, salva posizione/party/team/aree sbloccate</feature>
+    <feature name="Mini-gioco Tris">Tic-tac-toe con AI strategica, 5 NPC nelle aree</feature>
+    <feature name="Debug Panel">F9, slider velocita/testo, toggle griglia/collisioni/FPS/posizione</feature>
+    <feature name="Responsive">Phone frame desktop, fullscreen mobile, D-pad touch</feature>
+  </implementato>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATS E BILANCIAMENTO ATTUALE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <bilanciamento>
+    <formula_danno>
+      damage = attacker.atk - (defender.def * 0.3)
+      minimo = 5
+      critico = damage * 2
+      evasione = random check su defender.evasionChance → danno 0
+      NOTA: elemento Feng Shui NON ancora applicato al danno
+    </formula_danno>
+    <creature_stats>
+      Topo:      HP 75  ATK 28 DEF 5  CRIT 22% EVA 20% Acqua   (Velocista)
+      Bue:       HP 130 ATK 26 DEF 12 CRIT 8%  EVA 2%  Terra   (Tank)
+      Tigre:     HP 85  ATK 38 DEF 5  CRIT 30% EVA 5%  Legno   (DPS)
+      Coniglio:  HP 100 ATK 32 DEF 8  CRIT 15% EVA 12% Legno   (Bilanciato)
+      Drago:     HP 110 ATK 36 DEF 9  CRIT 15% EVA 3%  Fuoco   (Potenza)
+      Serpente:  HP 75  ATK 35 DEF 4  CRIT 35% EVA 10% Fuoco   (Critico)
+      Cavallo:   HP 90  ATK 34 DEF 6  CRIT 18% EVA 10% Fuoco   (Attaccante)
+      Capra:     HP 105 ATK 28 DEF 10 CRIT 12% EVA 12% Terra   (Supporto)
+      Scimmia:   HP 80  ATK 30 DEF 5  CRIT 25% EVA 22% Metallo (Trickster)
+      Gallo:     HP 100 ATK 27 DEF 11 CRIT 12% EVA 6%  Metallo (Difensore)
+      Cane:      HP 100 ATK 31 DEF 8  CRIT 15% EVA 8%  Terra   (Bilanciato)
+      Maiale:    HP 140 ATK 24 DEF 10 CRIT 8%  EVA 3%  Acqua   (Resistente)
+    </creature_stats>
+    <danno_tipico>KO in 2-3 colpi. Crit puo' one-shot glass cannon.</danno_tipico>
+  </bilanciamento>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- COSA MANCA DA FARE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <todo>
+
+    <priority_alta nome="Core mancante">
+      <item id="1">ELEMENTO NEL DANNO — Ciclo Feng Shui nel calcolo. Vantaggio = bonus, svantaggio = riduzione.</item>
+      <item id="2">EPISODI 2-5 — Mappe, NPC, boss per Foresta/Montagna/Tempio/Citta. Trama collegata al film.</item>
+      <item id="3">PROGRESSIONE AREE — Boss sconfitto sblocca aree successive. Tracking boss.</item>
+      <item id="4">SUDDEN DEATH — Turno morra secco se pareggio totale dopo 5 turni.</item>
+      <item id="5">SPRITE 3D PRE-RENDERIZZATI — Da Blender a sprite sheet PNG. Zero impatto performance.</item>
+      <item id="6">TRAMA INTEGRATA — Dialoghi NPC che raccontano la storia del film scena per scena.</item>
+    </priority_alta>
+
+    <priority_media nome="Gameplay">
+      <item id="7">BUFF ONE-SHOT — 1 per creatura per match. Costo HP, boost stat, dura round.</item>
+      <item id="8">CAMBIO ELEMENTO ONE-SHOT — Switch elemento, 1 uso, scelto nel deck building.</item>
+      <item id="9">DECK BUILDING — Animale + Elemento + Arma (Spada2Mani/SpadaScudo/Tirapugni).</item>
+      <item id="10">MINI-GIOCHI MATEMATICI — Aritmetica, geometria, algebra per area. Solo Tris ora.</item>
+      <item id="11">SCHERMATE VITTORIA/SCONFITTA — Stats, XP, bottoni replay/mappa.</item>
+      <item id="12">TRASFORMAZIONE TAYLOR — Power-up visivo: ordine 1 → 2 → n (Bunny God) nei boss fight.</item>
+    </priority_media>
+
+    <priority_bassa nome="Polish e futuro">
+      <item id="13">TIMER MORRA — Countdown per scelta simultanea.</item>
+      <item id="14">AI VERA — Pattern recognition, adattamento.</item>
+      <item id="15">AUDIO/SFX — Musica e effetti sonori.</item>
+      <item id="16">ONLINE MULTIPLAYER — Firebase/PlayFab.</item>
+      <item id="17">ARCO ROKO BASILISK — Boss finale post-campagna, viaggio nel tempo.</item>
+    </priority_bassa>
+
+  </todo>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- REGOLE PER LO SVILUPPO -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <regole>
+    <regola>Vanilla JS + Canvas 2D. Nessun framework, nessun build step.</regola>
+    <regola>Mobile-first. Deve funzionare da link nei social senza download.</regola>
+    <regola>Sprite placeholder in Canvas. Futuro: sprite 3D pre-renderizzati da Blender.</regola>
+    <regola>Episodi settimanali come file JSON caricati dinamicamente.</regola>
+    <regola>Salvataggio solo localStorage. Nessun backend per ora.</regola>
+    <regola>Debug panel per testare senza modificare codice.</regola>
+    <regola>Lore: Piccoloplay protagonista, Yilon-Verse, Zodiaco Cinese, Fibonacci, Collatz, Taylor.</regola>
+    <regola>NO riferimenti a persone reali. NO ispirazione esplicita Persona 5.</regola>
+    <regola>Dopamina rush: danni alti, crit devastanti, screen shake, effetti visivi forti.</regola>
+    <regola>Trama del gioco segue la struttura in 3 atti del film Reply AI 2026.</regola>
+  </regole>
+
+</fibunnycci_project_prompt>
