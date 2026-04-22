@@ -54,8 +54,10 @@ const Debug = {
         }
     },
 
+    SETTINGS_VERSION: 2,
+
     _saveSettings() {
-        const data = {};
+        const data = { _v: this.SETTINGS_VERSION };
         for (const [key, s] of Object.entries(this.settings)) data[key] = s.value;
         localStorage.setItem('fibunnycci_debug', JSON.stringify(data));
     },
@@ -65,7 +67,13 @@ const Debug = {
         if (!raw) return;
         try {
             const data = JSON.parse(raw);
+            // Discard saves from a previous defaults version
+            if (data._v !== this.SETTINGS_VERSION) {
+                localStorage.removeItem('fibunnycci_debug');
+                return;
+            }
             for (const [key, val] of Object.entries(data)) {
+                if (key === '_v') continue;
                 if (this.settings[key] !== undefined) this.settings[key].value = val;
             }
         } catch (e) {}
