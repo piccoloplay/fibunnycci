@@ -265,58 +265,98 @@
   <!-- ARCHITETTURA TECNICA ATTUALE -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <architettura>
-    <stack>HTML + CSS + JavaScript vanilla, Canvas 2D, nessun framework</stack>
-    <canvas_resolution>336x660 pixel (aspect ratio mobile)</canvas_resolution>
+    <stack>HTML + CSS + JavaScript vanilla, Canvas 2D, nessun framework, nessun build step</stack>
+    <canvas_resolution>672x1320 pixel (aspect ratio mobile verticale, pixel-perfect)</canvas_resolution>
+    <camera>Zoom 2x integer (nearest-neighbour) sulla viewport</camera>
     <hosting>GitHub Pages (gratuito)</hosting>
-    <salvataggio>localStorage — 3 slot manuali + auto-save</salvataggio>
+    <salvataggio>localStorage — 3 slot manuali + auto-save (su beforeunload)</salvataggio>
+    <cache_busting>Querystring ?v=NN manuale su ogni tag script in index.html</cache_busting>
 
     <files>
-      <file path="index.html">Entry point, canvas, D-pad mobile, bottoni A/B/menu</file>
-      <file path="css/style.css">Layout phone frame desktop, responsive mobile, menu, debug panel</file>
-      <file path="js/engine.js">Game loop, state machine, orchestra tutti i moduli</file>
+      <file path="index.html">Entry point, canvas 672x1320, error handler globale, D-pad nascosto (fallback keyboard), carica 19 script</file>
+      <file path="css/style.css">Phone frame desktop, responsive mobile, menu, debug panel</file>
+      <file path="js/engine.js">Game singleton: loop, state machine, camera, HUD, toast, fullscreen, auto-save</file>
       <file path="js/input.js">Tastiera WASD/frecce + D-pad touch + bottoni A/B</file>
+      <file path="js/touch.js">Tap-to-move con pathfinding BFS, hit-test NPC, path preview overlay</file>
       <file path="js/save.js">Salvataggio/caricamento localStorage con slot</file>
-      <file path="js/creatures.js">Roster 12 creature zodiaco, stats, rendering Canvas unico per animale, elementi Feng Shui</file>
-      <file path="js/map.js">Tilemap rendering, collisioni, 20 tipi di tile (citta, natura, edifici)</file>
-      <file path="js/player.js">Movimento a griglia con animazione smooth, direzione, sprite placeholder</file>
+      <file path="js/audio.js">Orchestratore musica con un elemento &lt;audio&gt; persistente (hot-swap di src) + SFX</file>
+      <file path="js/sprites.js">Loader PNG + split spritesheet runtime (player, NPC, creature, coniglio 5 varianti)</file>
+      <file path="js/ui.js">Helper canvas: roundRect, text, icone, font</file>
+      <file path="js/creatures.js">Roster 12 creature zodiaco, stats, 5 elementi Feng Shui, fallback procedurale, collection</file>
+      <file path="js/map.js">Tilemap PNG (image + collision mask), rendering, getExitAt</file>
+      <file path="js/player.js">Movimento a griglia, 4 direzioni x 3 frame walk, getFacingTile</file>
       <file path="js/npc.js">NPC con dialoghi, trigger combattimento e tris</file>
-      <file path="js/dialogue.js">Textbox con testo lettera-per-lettera, ritratto, scelte</file>
-      <file path="js/menu.js">Menu pausa: Team, Bestiario, Inventario, Mappa, Salva</file>
-      <file path="js/combat.js">Sistema combattimento Morra Cinese completo con fasi, stage, effetti</file>
+      <file path="js/dialogue.js">Textbox su canvas, testo lettera-per-lettera, ritratto, scelte</file>
+      <file path="js/menu.js">Menu pausa: Team, Bestiario, Inventario, Mappa, Salva, Opzioni</file>
+      <file path="js/combat.js">Morra Cinese: best of 3, element matchup, power-up (HP cost), cambio elemento, screen shake, aura FX</file>
       <file path="js/tris.js">Mini-gioco Tris (tic-tac-toe) con AI</file>
-      <file path="js/titlescreen.js">Schermata titolo: Nuova Partita / Continua, spirale Fibonacci</file>
-      <file path="js/worldmap.js">Mappa mondo con 5 nodi area, percorsi ramificati, aree bloccabili</file>
+      <file path="js/titlescreen.js">Schermata titolo: Nuova Partita / Continua / Opzioni, spirale Fibonacci</file>
+      <file path="js/worldmap.js">Mappa mondo con nodi area, percorsi ramificati, aree bloccabili</file>
       <file path="js/teambuilder.js">Selezione team da 12 creature, swap slot, scroll roster</file>
-      <file path="js/debug.js">Pannello debug runtime: velocita, griglia, collisioni, FPS, posizione</file>
-      <file path="episodes/ep01.json">Episodio 1: mappa 30x30, 7 NPC (5 tris + 2 combattimento), party 3 creature</file>
-      <file path="GDD_FiBunnyCci.xml">Game Design Document originale del sistema a turni</file>
+      <file path="js/debug.js">Pannello opzioni slide-in: griglia, collisioni, FPS, posizione, fullscreen</file>
+      <file path="episodes/ep01.json">Villaggio Sakura: 5 NPC (3 dialogo, 2 con triggerCombat), party [coniglio,cavallo,bue], inventario</file>
+      <file path="tools/split_tileset.py">Script Pillow: ritaglio griglia/boxes + chroma-key magenta + resize nearest</file>
+      <file path="tools/generate_collision_mask.py">Genera maschera collisione da PNG mappa</file>
+      <file path="tools/split_creature_variants.py">Ritaglia sheet creatura nelle 5 varianti elementali</file>
+      <file path="assets/sprites/raw/">PNG sorgente da Leonardo/ChatGPT (tileset_traditional, tileset_urban, player_piccoloplay, npc_sheet, coniglio_sheet)</file>
+      <file path="assets/sprites/characters/">Player 4x3 frame + 6 NPC x 8 frame (kebabbaro, mei, nonno, poliziotto, student, turista)</file>
+      <file path="assets/sprites/creatures/">Coniglio 5 varianti elementali. Dog/Dragon/Horse/Monkey/Oz/Tiger ancora grezzi in root (da processare)</file>
+      <file path="assets/sprites/maps/">3 mappe PNG + collision mask: overworld, cap1_scuola, cap2_stazione</file>
+      <file path="assets/sprites/backgrounds/">battle_forest.png (sfondo combattimento)</file>
+      <file path="assets/tiles/traditional/">15 tile 64x64: grass, dirt, sand, stone, water, bamboo, cherry_tree, ecc.</file>
+      <file path="assets/tiles/urban/">3 tile: asphalt, pavement, rail</file>
+      <file path="assets/audio/">overworld.mp3, battle.mp3, wudang.mp3</file>
+      <file path="GDD_FiBunnyCci.xml">Game Design Document: regole match/round/turn, damage, elementi</file>
       <file path="FIBUNNYCCI_PROJECT_PROMPT.xml">QUESTO FILE — prompt completo per Claude</file>
     </files>
 
     <state_machine>
-      title → worldmap → overworld → dialogue → combat/tris
-                                   → menu → teambuilder
-                                          → worldmap (ritorno)
+      title → overworld ⇄ dialogue ⇄ combat/tris
+            → overworld → transition → overworld (cambio area/episodio con fade)
+            → overworld → menu → teambuilder → overworld
+            → overworld → worldmap → transition → overworld
     </state_machine>
+
+    <stati>
+      <stato name="title">Schermata titolo, silenziosa</stato>
+      <stato name="overworld">Esplorazione mappa, HUD, nav bar bottom, musica area</stato>
+      <stato name="transition">Fade out/in 800ms durante cambio episodio o area</stato>
+      <stato name="worldmap">Mappa mondo con nodi area</stato>
+      <stato name="dialogue">Textbox attiva (blocca overworld)</stato>
+      <stato name="menu">Menu pausa modal</stato>
+      <stato name="teambuilder">Editor team 3 slot</stato>
+      <stato name="combat">Morra Cinese full-screen, musica combat</stato>
+      <stato name="tris">Mini-gioco tic-tac-toe full-screen</stato>
+    </stati>
   </architettura>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- COSA E' GIA' FATTO E FUNZIONANTE -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <implementato>
-    <feature name="Title Screen">Logo, spirale dorata, coniglio mascotte, Nuova Partita / Continua</feature>
-    <feature name="World Map">5 aree con nodi, percorsi ramificati, aree bloccabili, info panel</feature>
-    <feature name="Overworld">Mappa tile 30x30, 20 tile types, movimento griglia, camera, collisioni, HUD</feature>
-    <feature name="NPC e Dialoghi">Dialoghi multi-linea, testo lettera-per-lettera, trigger combat/tris</feature>
-    <feature name="Combattimento Morra">Best of 3, max 5 turni, countdown 3-2-1, flip carte, screen shake/flash, numeri volanti, 5 stage unici per area</feature>
-    <feature name="12 Creature Zodiaco">Rendering Canvas unico per animale, 5 elementi Feng Shui, badge elemento</feature>
+    <feature name="Title Screen">Logo, spirale dorata, coniglio mascotte, Nuova Partita / Continua / Opzioni, silenzioso</feature>
+    <feature name="World Map">Nodi area, percorsi ramificati, aree bloccabili, info panel</feature>
+    <feature name="Overworld">Tilemap da PNG + collision mask PNG, camera zoom 2x, HUD top, nav bar bottom (Home/Team/Menu)</feature>
+    <feature name="Tap-to-Move">Pathfinding BFS, preview path, interazione NPC con reindirizzamento direzione</feature>
+    <feature name="Transizioni">Fade out/in 800ms tra episodi/aree con nome area al centro</feature>
+    <feature name="NPC e Dialoghi">Textbox su canvas, testo lettera-per-lettera, trigger combat/tris, dialoghi multipli</feature>
+    <feature name="Combattimento Morra">Best of 3, max 5 turni, unit select cieca, tap to play, reveal animato, screen shake, flash, numeri volanti</feature>
+    <feature name="Sistema Elementi">Ciclo Feng Shui nel danno: 1.5x super-effective, 0.67x resiste. Feedback "SUPER!" / "RESISTE"</feature>
+    <feature name="Power-Up (Potenziamento)">One-shot per match: costa 15% max HP, prossimo attacco 1.8x. Aura arancione pulsante. Overlay dimensione mistica</feature>
+    <feature name="Cambio Elemento">One-shot per match: switch elemento creatura, swirl + flash del colore elemento</feature>
+    <feature name="12 Creature Zodiaco">Stats complete + elemento Feng Shui. Sprite PNG per coniglio (5 varianti elementali), fallback procedurale per le altre</feature>
     <feature name="Team Builder">12 creature, 3 slot, swap, scroll roster</feature>
     <feature name="Bestiario">Lista 12 creature con stats/ruolo/elemento/descrizione</feature>
-    <feature name="Menu Pausa">Team, Bestiario, Inventario, Mappa, Salva</feature>
-    <feature name="Salvataggio">3 slot + auto-save, salva posizione/party/team/aree sbloccate</feature>
-    <feature name="Mini-gioco Tris">Tic-tac-toe con AI strategica, 5 NPC nelle aree</feature>
-    <feature name="Debug Panel">F9, slider velocita/testo, toggle griglia/collisioni/FPS/posizione</feature>
-    <feature name="Responsive">Phone frame desktop, fullscreen mobile, D-pad touch</feature>
+    <feature name="Menu Pausa">Team, Bestiario, Inventario, Mappa, Salva, Opzioni</feature>
+    <feature name="Salvataggio">3 slot + auto-save su beforeunload: posizione/party/team/aree sbloccate/collection/flags/playTime</feature>
+    <feature name="Mini-gioco Tris">Tic-tac-toe con AI</feature>
+    <feature name="Pannello Opzioni">Slide-in animato: toggle griglia, collisioni, FPS, posizione, fullscreen</feature>
+    <feature name="Audio">Orchestratore con elemento &lt;audio&gt; persistente (hot-swap di src). 3 tracce: overworld.mp3, battle.mp3, wudang.mp3. SFX confirm/transition/npcTalk/menuOpen</feature>
+    <feature name="Sprite Pipeline">Script Python (Pillow): split tileset con griglia o bounding box, chroma-key magenta, resize nearest. Generazione collision mask. Split varianti creatura</feature>
+    <feature name="Asset PNG">Player 4 direzioni x 3 frame, 6 NPC x 8 frame, 18 tile (15 traditional + 3 urban), 3 mappe con collision mask, 1 background combat</feature>
+    <feature name="Responsive">Phone frame desktop, fullscreen toggle mobile con fallback iOS (add to home)</feature>
+    <feature name="Toast">Notifiche temporanee on-canvas con fade in/out</feature>
+    <feature name="Error Handler">Overlay rosso a video per errori JS runtime (debug mobile senza devtools)</feature>
   </implementato>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -326,9 +366,12 @@
     <formula_danno>
       damage = attacker.atk - (defender.def * 0.3)
       minimo = 5
+      damage *= elementMult   (1.5 super, 0.67 resist, 1.0 neutro)
+      damage *= playerNextAttackBuff  (1.8 se Potenziamento armato, poi consumato)
       critico = damage * 2
       evasione = random check su defender.evasionChance → danno 0
-      NOTA: elemento Feng Shui NON ancora applicato al danno
+      arrotondamento finale: round(damage)
+      Implementato in js/combat.js (vedi calcolo turno ~riga 754).
     </formula_danno>
     <creature_stats>
       Topo:      HP 75  ATK 28 DEF 5  CRIT 22% EVA 20% Acqua   (Velocista)
@@ -352,31 +395,42 @@
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <todo>
 
-    <priority_alta nome="Core mancante">
-      <item id="1">ELEMENTO NEL DANNO — Ciclo Feng Shui nel calcolo. Vantaggio = bonus, svantaggio = riduzione.</item>
-      <item id="2">EPISODI 2-5 — Mappe, NPC, boss per Foresta/Montagna/Tempio/Citta. Trama collegata al film.</item>
-      <item id="3">PROGRESSIONE AREE — Boss sconfitto sblocca aree successive. Tracking boss.</item>
-      <item id="4">SUDDEN DEATH — Turno morra secco se pareggio totale dopo 5 turni.</item>
-      <item id="5">SPRITE 3D PRE-RENDERIZZATI — Da Blender a sprite sheet PNG. Zero impatto performance.</item>
-      <item id="6">TRAMA INTEGRATA — Dialoghi NPC che raccontano la storia del film scena per scena.</item>
+    <priority_alta nome="Content">
+      <item id="1">SPRITE CREATURE — Processare i PNG grezzi in root (Dog, Dragon, Horse, Monkey, Oz, Tiger) nelle varianti elementali, come già fatto per coniglio_sheet.png</item>
+      <item id="2">EPISODI 2-5 — Mappe, NPC, boss per Foresta/Montagna/Tempio/Città. Trama collegata al film Reply AI 2026</item>
+      <item id="3">PROGRESSIONE AREE — Boss sconfitto sblocca aree successive. Tracking flag boss</item>
+      <item id="4">TRAMA INTEGRATA — Dialoghi NPC che raccontano la storia del film scena per scena</item>
+      <item id="5">TRASFORMAZIONE TAYLOR — Power-up narrativo visivo ordine 1 → 2 → n (Bunny God) nei boss fight (la meccanica Potenziamento esiste già come base)</item>
     </priority_alta>
 
     <priority_media nome="Gameplay">
-      <item id="7">BUFF ONE-SHOT — 1 per creatura per match. Costo HP, boost stat, dura round.</item>
-      <item id="8">CAMBIO ELEMENTO ONE-SHOT — Switch elemento, 1 uso, scelto nel deck building.</item>
-      <item id="9">DECK BUILDING — Animale + Elemento + Arma (Spada2Mani/SpadaScudo/Tirapugni).</item>
-      <item id="10">MINI-GIOCHI MATEMATICI — Aritmetica, geometria, algebra per area. Solo Tris ora.</item>
-      <item id="11">SCHERMATE VITTORIA/SCONFITTA — Stats, XP, bottoni replay/mappa.</item>
-      <item id="12">TRASFORMAZIONE TAYLOR — Power-up visivo: ordine 1 → 2 → n (Bunny God) nei boss fight.</item>
+      <item id="6">SUDDEN DEATH — Turno morra secco se pareggio totale dopo 5 turni</item>
+      <item id="7">DECK BUILDING — Selezione arma (Spada2Mani/SpadaScudo/Tirapugni) + elemento alternativo pre-match</item>
+      <item id="8">ARMI COME STAT MODIFIER — DPS/Tank/Crit modificano atk/def/crit/evasion</item>
+      <item id="9">MINI-GIOCHI MATEMATICI — Aritmetica, geometria, algebra per area (ora solo Tris)</item>
+      <item id="10">SCHERMATE VITTORIA/SCONFITTA — Stats, XP guadagnato, bottoni replay/mappa</item>
+      <item id="11">SFX COMBATTIMENTO — Hit, crit, schivata, KO (ora musica sì, effetti morra minimi)</item>
     </priority_media>
 
     <priority_bassa nome="Polish e futuro">
-      <item id="13">TIMER MORRA — Countdown per scelta simultanea.</item>
-      <item id="14">AI VERA — Pattern recognition, adattamento.</item>
-      <item id="15">AUDIO/SFX — Musica e effetti sonori.</item>
-      <item id="16">ONLINE MULTIPLAYER — Firebase/PlayFab.</item>
-      <item id="17">ARCO ROKO BASILISK — Boss finale post-campagna, viaggio nel tempo.</item>
+      <item id="12">TIMER MORRA — Countdown per scelta simultanea</item>
+      <item id="13">AI VERA — Pattern recognition sull'avversario, adattamento</item>
+      <item id="14">ANIMAZIONE DEATH — Stato dedicato quando HP arriva a 0</item>
+      <item id="15">ONLINE MULTIPLAYER — Firebase/PlayFab: matchmaking, reveal simultaneo, anti-cheat</item>
+      <item id="16">ARCO ROKO BASILISK — Boss finale post-campagna, viaggio nel tempo</item>
     </priority_bassa>
+
+    <recentemente_completato>
+      <item>Sistema Elementi Feng Shui nel danno (1.5x / 0.67x)</item>
+      <item>Potenziamento one-shot (costo HP, 1.8x danno)</item>
+      <item>Cambio Elemento one-shot</item>
+      <item>Audio: musica area/combat/wudang con hot-swap</item>
+      <item>Pipeline sprite PNG (Leonardo/ChatGPT → Pillow → tiles/characters/creatures)</item>
+      <item>Collision mask da PNG hand-drawn per overworld</item>
+      <item>Background combat PNG con gradiente UI</item>
+      <item>Transizioni fade tra aree</item>
+      <item>Pannello Opzioni slide-in</item>
+    </recentemente_completato>
 
   </todo>
 
@@ -384,14 +438,16 @@
   <!-- REGOLE PER LO SVILUPPO -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <regole>
-    <regola>Vanilla JS + Canvas 2D. Nessun framework, nessun build step.</regola>
+    <regola>Vanilla JS + Canvas 2D. Nessun framework, nessun build step, nessun package manager.</regola>
     <regola>Mobile-first. Deve funzionare da link nei social senza download.</regola>
-    <regola>Sprite placeholder in Canvas. Futuro: sprite 3D pre-renderizzati da Blender.</regola>
-    <regola>Episodi settimanali come file JSON caricati dinamicamente.</regola>
+    <regola>Asset: PNG hand-drawn o generati con Leonardo/ChatGPT, processati via tools/ Pillow. Fallback procedurale in Canvas per ciò che manca.</regola>
+    <regola>Cache busting manuale: bumpare ?v=NN nei tag script di index.html ad ogni modifica JS.</regola>
+    <regola>Episodi settimanali come file JSON caricati dinamicamente da episodes/epNN.json.</regola>
     <regola>Salvataggio solo localStorage. Nessun backend per ora.</regola>
-    <regola>Debug panel per testare senza modificare codice.</regola>
+    <regola>Error handler inline in index.html: errori runtime sono visibili a video su mobile senza devtools.</regola>
+    <regola>Pannello Opzioni per testare senza modificare codice (griglia, collisioni, FPS, posizione).</regola>
     <regola>Lore: Piccoloplay protagonista, Yilon-Verse, Zodiaco Cinese, Fibonacci, Collatz, Taylor.</regola>
-    <regola>NO riferimenti a persone reali. NO ispirazione esplicita Persona 5.</regola>
+    <regola>NO riferimenti a persone reali (Elon Musk ecc.). NO ispirazione esplicita Persona 5.</regola>
     <regola>Dopamina rush: danni alti, crit devastanti, screen shake, effetti visivi forti.</regola>
     <regola>Trama del gioco segue la struttura in 3 atti del film Reply AI 2026.</regola>
   </regole>

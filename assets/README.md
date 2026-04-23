@@ -33,18 +33,20 @@ Carica ogni PNG in `sprites/raw/` con **questi nomi esatti**
 - `player_piccoloplay.png` — sprite sheet 1024×1024, 4×3, Piccoloplay
 
 ### 12 Creature dello zodiaco (un file ciascuna)
-- `creature_coniglio.png`  (Aqualop, acqua)
-- `creature_topo.png`      (Ironrat, metallo)
-- `creature_cavallo.png`   (Pyropony, fuoco)
-- `creature_drago.png`     (Dracofibo, fuoco)
-- `creature_serpente.png`  (Vinesnake, legno)
-- `creature_bue.png`       (Terrabull, terra)
-- `creature_tigre.png`     (Emberclaw, fuoco)
-- `creature_scimmia.png`   (Bambooki, legno)
-- `creature_maiale.png`    (Flamepig, fuoco)
-- `creature_gallo.png`     (Goldcluck, metallo)
-- `creature_cane.png`      (Sandpup, terra)
-- `creature_capra.png`     (Lunabaa, terra)
+Stato attuale:
+- ✅ `creature_coniglio.png` → processato in `creatures/creature_coniglio_{acqua,fuoco,legno,metallo,terra}.png`
+- 🟡 Nella root del repo, ancora da spostare in `sprites/raw/` e processare con `tools/split_creature_variants.py`:
+  - `Dog.png` → `creature_cane.png`
+  - `Dragon.png` → `creature_drago.png`
+  - `Horse.png` → `creature_cavallo.png`
+  - `Monkey.png` → `creature_scimmia.png`
+  - `Oz.png` → `creature_bue.png`
+  - `Tiger.png` → `creature_tigre.png`
+- ⬜ Da creare: `creature_topo.png`, `creature_serpente.png`, `creature_maiale.png`, `creature_gallo.png`, `creature_capra.png`
+
+Nomi "brand" (Aqualop, Ironrat, Pyropony, Dracofibo, Vinesnake, Terrabull,
+Emberclaw, Bambooki, Flamepig, Goldcluck, Sandpup, Lunabaa) sono i nomi
+elementali: la stessa base animale cambia nome a seconda dell'elemento.
 
 ### NPC principali
 - `npc_kebabbaro.png`       — il kebabbaro di Arezzo

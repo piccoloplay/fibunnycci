@@ -256,31 +256,45 @@
       </step>
 
       <step order="2" name="Danno Base">
-        <formula>damage = attacker.atk - (defender.def * 0.5)</formula>
-        <minimum>1 (il danno non può essere inferiore a 1)</minimum>
+        <formula>damage = attacker.atk - (defender.def * 0.3)</formula>
+        <minimum>5 (il danno non può essere inferiore a 5)</minimum>
+        <implemented>js/combat.js</implemented>
       </step>
 
-      <step order="3" name="Critico">
+      <step order="3" name="Modificatore Elemento">
+        <formula>damage = damage * elementMult</formula>
+        <values>1.5 super-effective, 0.67 resiste, 1.0 neutro</values>
+        <implemented>js/combat.js (turnElementMult)</implemented>
+      </step>
+
+      <step order="4" name="Buff Potenziamento">
+        <formula>damage = damage * playerNextAttackBuff</formula>
+        <values>1.8x se Potenziamento armato, consumato dopo l'attacco. Default 1.0</values>
+        <implemented>js/combat.js (playerNextAttackBuff)</implemented>
+      </step>
+
+      <step order="5" name="Critico">
         <check>random(0,1) &lt; attacker.critChance</check>
         <if_true>damage = damage * 2</if_true>
       </step>
 
-      <step order="4" name="Arrotondamento">
+      <step order="6" name="Arrotondamento">
         <formula>damage = round(damage)</formula>
       </step>
 
-      <step order="5" name="Applicazione">
+      <step order="7" name="Applicazione">
         <formula>defender.currentHp = max(0, defender.currentHp - damage)</formula>
       </step>
     </damage_formula>
 
     <element_modifier>
-      <status>DA IMPLEMENTARE</status>
+      <status>IMPLEMENTATO</status>
       <description>
-        Il vantaggio elemento modifica il danno.
-        Pesa di più se vinci la morra (bonus attacco),
-        meno se perdi (riduzione danno subito).
-        Ciclo: Fuoco→Metallo→Legno→Terra→Acqua→Fuoco
+        Il vantaggio elemento modifica il danno al momento dell'hit.
+        Super-effective = 1.5x, resiste = 0.67x, neutro = 1.0x.
+        Ciclo produttivo Feng Shui: Legno→Fuoco→Terra→Metallo→Acqua→Legno
+        (ogni elemento genera il successivo, batte quello due posizioni avanti).
+        Feedback visivo: testo "SUPER!" verde o "RESISTE" arancione come popup.
       </description>
     </element_modifier>
 
@@ -329,22 +343,25 @@
       istantanea e non rallenta il flow.
     </description>
 
-    <resource name="Buff Stat">
-      <status>DA IMPLEMENTARE</status>
-      <cost>HP immediato (il giocatore paga HP per attivarlo)</cost>
-      <effect>Boost permanente a una stat (ATK, DEF, crit, evasion)</effect>
-      <duration>Fino a fine round (non match)</duration>
-      <uses_per_creature>1</uses_per_creature>
-      <timing>Attivabile durante la scelta della morra</timing>
+    <resource name="Potenziamento (Buff)">
+      <status>IMPLEMENTATO (versione v1)</status>
+      <cost>15% dei max HP del giocatore (powerUpHpCostPct=0.15)</cost>
+      <effect>Prossimo attacco del giocatore andato a segno moltiplica il danno per 1.8 (powerUpDamageMult=1.8)</effect>
+      <duration>Consumato alla prima hit riuscita</duration>
+      <uses_per_match>1 (playerUsedPowerUp)</uses_per_match>
+      <timing>Attivabile durante la scelta della morra (action_select)</timing>
+      <fx>Aura arancione/gialla concentrica pulsante + overlay "dimensione mistica" che sfuma in nero</fx>
+      <todo>Versione futura: più stat buffabili (ATK/DEF/crit/evasion), durata round intero</todo>
     </resource>
 
     <resource name="Cambio Elemento">
-      <status>DA IMPLEMENTARE</status>
+      <status>IMPLEMENTATO (versione v1)</status>
       <cost>Gratuito</cost>
-      <effect>Switcha l'elemento della creatura al tipo pre-scelto nel deck building</effect>
-      <uses_per_creature>1</uses_per_creature>
+      <effect>Switcha l'elemento della creatura. Aggiorna il modificatore danno per i turni successivi</effect>
+      <uses_per_match>1 (playerUsedElementSwap)</uses_per_match>
       <timing>Attivabile durante la scelta della morra</timing>
-      <note>Il tipo alternativo viene deciso in fase di deck building, non in match</note>
+      <fx>Swirl + flash del colore del nuovo elemento (1200ms)</fx>
+      <todo>Versione futura: elemento target scelto nel deck building (ora sceglie runtime)</todo>
     </resource>
   </oneshot_resources>
 
@@ -512,51 +529,30 @@
   <animations>
 
     <creature_animations>
-      <state name="Idle">Stato base, loop. Tutte le transizioni partono da qui.</state>
-      <state name="AttaccoCarta">Animazione mossa Carta</state>
-      <state name="AttaccoSasso">Animazione mossa Sasso</state>
-      <state name="AttaccoForbici">Animazione mossa Forbice</state>
-      <state name="Win">Vittoria morra, danno normale inflitto</state>
-      <state name="Lose">Sconfitta morra, danno subito</state>
-      <state name="Crit">Colpo critico inflitto (al posto di Win)</state>
-      <state name="Evas">Schivata riuscita (al posto di Lose)</state>
-      <state name="Draw">Pareggio morra, balletto simpatico</state>
-      <state name="Death">Creatura KO (HP=0)</state>
+      <description>
+        Nessun Animator Unity. Gli stati animazione sono stringhe
+        gestite dal timer di fase in js/combat.js (playerAnim, cpuAnim,
+        playerAnimTimer, cpuAnimTimer). Il rendering sceglie lo sprite
+        PNG appropriato (o il fallback procedurale) in base allo stato.
+      </description>
 
-      <animator_parameters>
-        <param name="sasso" type="bool"/>
-        <param name="carta" type="bool"/>
-        <param name="forbice" type="bool"/>
-        <param name="win" type="bool"/>
-        <param name="lose" type="bool"/>
-        <param name="crit" type="bool"/>
-        <param name="evas" type="bool"/>
-        <param name="draw" type="bool"/>
-        <param name="death" type="bool"/>
-      </animator_parameters>
+      <state name="idle">Loop base</state>
+      <state name="attack_carta">Mossa Carta</state>
+      <state name="attack_sasso">Mossa Sasso</state>
+      <state name="attack_forbice">Mossa Forbice</state>
+      <state name="win">Vittoria morra, danno normale inflitto</state>
+      <state name="lose">Sconfitta morra, danno subito</state>
+      <state name="crit">Colpo critico inflitto (al posto di win)</state>
+      <state name="evas">Schivata riuscita (al posto di lose)</state>
+      <state name="draw">Pareggio morra</state>
+      <state name="death">Creatura KO (HP=0) — DA IMPLEMENTARE</state>
 
-      <transition_flow>
-        Entry → Idle
-        Idle → AttaccoCarta (when carta=true)
-        Idle → AttaccoSasso (when sasso=true)
-        Idle → AttaccoForbici (when forbice=true)
-        AttaccoCarta → Idle (when carta=false)
-        AttaccoSasso → Idle (when sasso=false)
-        AttaccoForbici → Idle (when forbice=false)
-        Idle → Win (when win=true)
-        Idle → Lose (when lose=true)
-        Idle → Crit (when crit=true)
-        Idle → Evas (when evas=true)
-        Idle → Draw (when draw=true)
-        Idle → Death (when death=true)
-        Win/Lose/Crit/Evas/Draw → Idle (when respective bool=false)
-      </transition_flow>
-
-      <critical_note>
-        Le transizioni Win/Lose/Crit/Evas/Draw partono SOLO da Idle.
-        Quindi bisogna prima resettare i bool morra, aspettare che
-        l'Animator torni a Idle, e SOLO POI settare i bool risultato.
-      </critical_note>
+      <flow>
+        La fase di combat (unit_select → tap_to_play → morra_choice → reveal
+        → resolve → between_turns → round_end → match_end) determina
+        l'animazione corrente. Transizioni pilotate da phaseTimer, non
+        da parametri bool.
+      </flow>
     </creature_animations>
 
     <ui_animations>
@@ -576,68 +572,79 @@
       </animation>
     </ui_animations>
 
-    <camera_animations>
-      <animation name="GoToSelectUnit">
-        LeanTween move+rotate di MainReference alla posizione panoramica.
-        Duration: 0.8s, easeInOutSine.
-      </animation>
-      <animation name="GoToFight">
-        LeanTween move+rotate di MainReference alla posizione fight.
-        Duration: 0.6s, easeInOutSine.
-      </animation>
-      <animation name="CutToFight (Tap)">
-        Disattiva CameraCut, attiva CameraMain.
-        MainReference tilt X -4° (guarda leggermente in su).
-        Resta in questa posizione fino a scelta morra.
-      </animation>
-      <animation name="GoBackDown (Scelta Morra)">
-        MainReference torna alla rotazione fight standard.
-        Duration: 0.4s, easeOutSine.
-      </animation>
-      <animation name="CutToBetweenTurns">
-        Disattiva CameraMain, attiva CameraCut.
-        CutReference parte da posizione offset (random tra 4 varianti).
-        Anima verso posizione di MainReference.
-        Duration: cutDuration (0.6s), easeInOutSine.
-      </animation>
-    </camera_animations>
+    <combat_fx>
+      <fx name="Screen Shake">
+        Attivato su hit critico. Spostamento pseudo-random del canvas per pochi frame.
+      </fx>
+      <fx name="Flash">
+        Overlay bianco/colorato momentaneo su impatto.
+      </fx>
+      <fx name="Numeri Volanti">
+        Testo danno che sale e sfuma. Colori diversi per normale/crit/super/resiste/evade.
+      </fx>
+      <fx name="Dark Gradient UI">
+        Gradiente verticale scuro in alto (dove c'è la UI) solo durante tap_to_play,
+        per leggibilità. Sparisce durante morra_choice/resolve.
+      </fx>
+      <fx name="Aura Potenziamento">
+        Cerchi concentrici arancioni/gialli pulsanti attorno alla creatura del player
+        finché _powerUpAuraMs &gt; 0.
+      </fx>
+      <fx name="Dimensione Mistica">
+        Overlay full-screen scuro che sfuma in quando il Potenziamento è armato
+        (_dimensionAlpha). Si spegne dopo l'hit consumato.
+      </fx>
+      <fx name="Swirl Cambio Elemento">
+        Vortice + flash del colore del nuovo elemento sulla creatura del player
+        per 1200ms (_elementSwapMs).
+      </fx>
+      <fx name="Fade Transition">
+        Transizioni tra episodi: fade to black 400ms + load + fade back 400ms.
+        Nome area a centro schermo durante il picco di oscurità.
+      </fx>
+    </combat_fx>
 
   </animations>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- SISTEMA CAMERA (3D) -->
+  <!-- SISTEMA CAMERA (2D CANVAS) -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <camera_system>
     <description>
-      Due virtual camera Cinemachine + due reference transform (cubi).
-      Le virtual camera seguono i reference. Il CameraController muove
-      i reference con LeanTween e alterna le camera con SetActive.
-      Il Cinemachine Brain sulla Main Camera ha Default Blend = Cut.
+      Nessuna camera 3D. Rendering Canvas 2D con zoom integer.
+      Nell'overworld la "camera" è un offset calcolato in engine.js:
+      segue il player e clamp ai bordi della mappa.
+      In combat il layout è fisso (full-screen), le "camera animations"
+      vecchie (GoToFight, CutToBetweenTurns, LeanTween) non esistono
+      più: sono sostituite da effetti 2D (screen shake, flash, fade,
+      gradient overlay, aura pulsante).
     </description>
 
-    <camera name="CameraMain">
-      <follows>MainReference</follows>
-      <usage>Camera principale per fight e selezione</usage>
-    </camera>
-    <camera name="CameraCut">
-      <follows>CutReference</follows>
-      <usage>Camera alternativa per transizioni tra turni</usage>
-      <starts_disabled>true</starts_disabled>
-    </camera>
+    <overworld_camera>
+      <zoom>2.0 (integer, nearest-neighbour, pixel-perfect)</zoom>
+      <follow>Player con clamp ai bordi mappa</follow>
+      <formula>
+        camX = Player.pixelX - viewW/2 + tileSize/2  (poi clamp 0..mapW-viewW)
+        camY = Player.pixelY - viewH/2 + tileSize/2  (poi clamp 0..mapH-viewH)
+      </formula>
+      <implemented>js/engine.js _renderOverworld()</implemented>
+    </overworld_camera>
 
-    <reference name="MainReference">
-      <position x="0" y="-0.7973" z="3.78"/>
-      <rotation x="22.51" y="0" z="0"/>
-      <description>Posizione standard di combattimento. Non si muove durante il match.</description>
-    </reference>
-    <reference name="CutReference">
-      <position>Stessa di MainReference (target)</position>
-      <rotation>Stessa di MainReference (target)</rotation>
-      <description>
-        Parte da posizione offset, anima verso MainReference.
-        Viene resettato ogni volta che si attiva CameraCut.
-      </description>
-    </reference>
+    <combat_camera>
+      <layout>Full-screen fisso, nessun movimento di camera</layout>
+      <fx_per_feel>
+        screen shake su hit critico,
+        flash bianco/colorato su impatto,
+        fade-in dimensione mistica (_dimensionAlpha) quando Potenziamento armato,
+        dark gradient UI verticale solo in fase tap_to_play,
+        aura concentrica pulsante quando Potenziamento attivo
+      </fx_per_feel>
+    </combat_camera>
+
+    <transition_camera>
+      <description>Fade to black 400ms + load + fade back 400ms. Nome area al centro durante peak darkness.</description>
+      <implemented>js/engine.js _updateTransition()</implemented>
+    </transition_camera>
   </camera_system>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -667,68 +674,137 @@
   </mindgame>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- ARCHITETTURA SOFTWARE (UNITY) -->
+  <!-- ARCHITETTURA SOFTWARE (WEB VANILLA JS) -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <architecture>
     <description>
-      Architettura attuale dell'implementazione Unity.
-      Utile come riferimento per il porting webapp.
+      Implementazione attuale: HTML + Canvas 2D + JavaScript vanilla.
+      Nessun framework, nessun build step, nessun package manager.
+      Ogni modulo è un singleton globale (const X = {...}) caricato da
+      script tag in index.html con cache busting manuale (?v=NN).
+      L'orchestratore è Game (engine.js) che gestisce la state machine
+      e delega agli altri moduli.
     </description>
 
-    <script name="MatchManager">
-      <responsibility>Orchestra il match: scelta unità, turni, round, win condition</responsibility>
-      <manages>Round wins, morra wins, turn counter, unit selection</manages>
-      <calls>TapMachine, CameraController, UIAnimator</calls>
-    </script>
+    <module name="Game (engine.js)">
+      <responsibility>State machine principale, game loop (requestAnimationFrame), camera overworld, HUD, transizioni, toast, fullscreen, auto-save</responsibility>
+      <states>title, overworld, worldmap, transition, dialogue, menu, combat, tris, teambuilder</states>
+      <manages>currentEpisode, currentMap, gameState (party/inventory/team/flags/unlockedAreas/collection), playTime, currentAreaId</manages>
+    </module>
 
-    <script name="TapMachine">
-      <responsibility>Gestisce la singola morra: input, animazioni, danno, barre HP</responsibility>
-      <manages>Player move, animation sequencing, damage calculation, HP bars</manages>
-      <calls>AiCpu, MatchManager.OnTurnEnd(), CameraController, MorraUIAnimator</calls>
-    </script>
+    <module name="Combat (combat.js)">
+      <responsibility>Match Morra Cinese completo: best of 3, 5 turni, unit select, damage calc, element matchup, power-up, cambio elemento, FX</responsibility>
+      <phases>none, unit_select, tap_to_play, morra_choice, reveal, resolve, between_turns, round_end, match_end</phases>
+      <manages>playerTeam, cpuTeam, round wins, morra wins, turn history, turnElementMult, playerNextAttackBuff, screenShake, _powerUpAuraMs, _elementSwapMs, _dimensionAlpha</manages>
+    </module>
 
-    <script name="CreatureStats">
-      <responsibility>Dati stat di una creatura + formula danno</responsibility>
-      <manages>HP, ATK, DEF, critChance, evasionChance, CalculateDamage()</manages>
-      <serializable>true (inline nell'Inspector)</serializable>
-    </script>
+    <module name="Creatures (creatures.js)">
+      <responsibility>Roster 12 zodiaco, stat scaling per livello, elementi Feng Shui, rendering creatura (PNG variant o fallback procedurale), bestiario, collection</responsibility>
+      <manages>CREATURES dict (12 entry), ELEMENTS dict (5 entry), collection</manages>
+    </module>
 
-    <script name="AiCpu">
-      <responsibility>Scelta mossa AI</responsibility>
-      <current_implementation>Lista pre-scripted dall'Inspector</current_implementation>
-      <todo>AI intelligente (pattern matching, random pesato)</todo>
-    </script>
+    <module name="TeamBuilder (teambuilder.js)">
+      <responsibility>Editor team 3 slot, scroll roster, sostituzione creature</responsibility>
+    </module>
 
-    <script name="CameraController">
-      <responsibility>Gestione camera: LeanTween transitions + Cinemachine cuts</responsibility>
-      <attached_to>MainReference (ex ZoomInReference)</attached_to>
-    </script>
+    <module name="GameMap (map.js)">
+      <responsibility>Tilemap da PNG mappa + PNG collision mask, rendering, lookup exit, isBlocked</responsibility>
+    </module>
 
-    <script name="UIAnimator">
-      <responsibility>Animazioni UI select unit (slide + bounce)</responsibility>
-      <attached_to>GAMEMANAGER</attached_to>
-    </script>
+    <module name="Player (player.js)">
+      <responsibility>Movimento a griglia smooth, 4 direzioni x 3 frame walk, getFacingTile</responsibility>
+    </module>
 
-    <script name="MorraUIAnimator">
-      <responsibility>Animazioni UI bottoni morra (pop bounce)</responsibility>
-      <attached_to>Input (parent dei bottoni morra)</attached_to>
-    </script>
+    <module name="NPC (npc.js)">
+      <responsibility>Lookup NPC, dialoghi multi-pagina avanzanti, trigger combat/tris</responsibility>
+    </module>
+
+    <module name="Dialogue (dialogue.js)">
+      <responsibility>Textbox su canvas, testo lettera-per-lettera, coda pagine</responsibility>
+    </module>
+
+    <module name="Menu (menu.js)">
+      <responsibility>Menu pausa modal: Team, Bestiario, Inventario, Mappa, Salva, Opzioni</responsibility>
+    </module>
+
+    <module name="Input (input.js)">
+      <responsibility>Tastiera WASD/frecce, bottoni A/B, D-pad (fallback). Stato frame-based (wasPressed)</responsibility>
+    </module>
+
+    <module name="Touch (touch.js)">
+      <responsibility>Tap-to-move con pathfinding BFS, hit-test NPC, preview path, gestione pending talk</responsibility>
+    </module>
+
+    <module name="Sprites (sprites.js)">
+      <responsibility>Loader PNG + split spritesheet runtime: player 4x3, NPC 4x8, creature varianti elementali, tileset</responsibility>
+    </module>
+
+    <module name="Audio (audio.js)">
+      <responsibility>Un singolo elemento &lt;audio&gt; persistente per la musica, hot-swap di src per cambio traccia. SFX one-shot</responsibility>
+      <tracks>overworld.mp3, battle.mp3, wudang.mp3 (mappati per areaId)</tracks>
+    </module>
+
+    <module name="UI (ui.js)">
+      <responsibility>Helper canvas riusabili: roundRect, text con align/bold, drawIcon, font</responsibility>
+    </module>
+
+    <module name="Tris (tris.js)">
+      <responsibility>Mini-gioco tic-tac-toe, AI, layout centrato su schermo</responsibility>
+    </module>
+
+    <module name="TitleScreen (titlescreen.js)">
+      <responsibility>Schermata titolo: Nuova Partita / Continua / Opzioni, spirale Fibonacci animata</responsibility>
+    </module>
+
+    <module name="WorldMap (worldmap.js)">
+      <responsibility>Mappa mondo con nodi area, percorsi ramificati, aree bloccabili</responsibility>
+    </module>
+
+    <module name="Debug (debug.js)">
+      <responsibility>Pannello Opzioni slide-in: toggle griglia/collisioni/FPS/posizione/fullscreen</responsibility>
+    </module>
+
+    <module name="Save (save.js)">
+      <responsibility>localStorage: 3 slot manuali + auto-save su beforeunload. Format time</responsibility>
+    </module>
   </architecture>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- TODO LIST -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <todo>
-    <item priority="1">Sistema Elementi (feng shui cycle nel calcolo danno)</item>
-    <item priority="2">Buff one-shot (costo HP, boost stat, dura fino a fine round)</item>
-    <item priority="3">Cambio Elemento one-shot (switch a tipo pre-scelto nel deck)</item>
-    <item priority="4">Sudden Death (1 turno morra secco se pareggio totale)</item>
-    <item priority="5">Schermata vittoria/sconfitta (pannello in-scene)</item>
-    <item priority="6">Deck Building / Setter personaggi (menu pre-match)</item>
-    <item priority="7">Timer morra (scelta simultanea con countdown)</item>
-    <item priority="8">AI vera (non pre-scripted)</item>
-    <item priority="9">Animazione Death (death bool nell'Animator, non usato)</item>
-    <item priority="10">Porting online (Firebase/PlayFab: matchmaking, reveal simultaneo, anti-cheat)</item>
+    <item priority="1">Sudden Death — 1 turno morra secco se pareggio totale dopo 5 turni e HP uguali</item>
+    <item priority="2">Schermata vittoria/sconfitta — pannello con stats, XP, bottoni replay/mappa</item>
+    <item priority="3">Deck Building pre-match — selezione arma (Spada2Mani/SpadaScudo/Tirapugni) + elemento alternativo</item>
+    <item priority="4">Armi come stat modifier — DPS/Tank/Crit su atk/def/crit/evasion</item>
+    <item priority="5">Timer morra — countdown per scelta simultanea</item>
+    <item priority="6">AI vera — pattern recognition sull'avversario, random pesato adattivo</item>
+    <item priority="7">Animazione Death — stato dedicato quando HP arriva a 0</item>
+    <item priority="8">Sprite PNG per le altre 11 creature (ora solo coniglio ha le varianti elementali)</item>
+    <item priority="9">Trasformazione Taylor — power-up narrativo visivo per boss fight (ordine 1 → 2 → n = Bunny God)</item>
+    <item priority="10">SFX combattimento — hit, crit, schivata, KO</item>
+    <item priority="11">Online multiplayer — Firebase/PlayFab: matchmaking, reveal simultaneo, anti-cheat</item>
   </todo>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- RECENTEMENTE COMPLETATO (2026) -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <done>
+    <item>Porting completo da Unity 3D a Web/Canvas 2D vanilla JS</item>
+    <item>Sistema Elementi Feng Shui nel danno (1.5x super, 0.67x resist)</item>
+    <item>Potenziamento one-shot (costa 15% HP, 1.8x danno next hit)</item>
+    <item>Cambio Elemento one-shot (swirl FX + flash colorato)</item>
+    <item>Audio con elemento &lt;audio&gt; persistente e hot-swap src (3 tracce: overworld, battle, wudang)</item>
+    <item>Pipeline sprite PNG: Leonardo/ChatGPT → tools/split_tileset.py (Pillow) → assets/</item>
+    <item>Tilemap da PNG hand-drawn + collision mask PNG separata</item>
+    <item>3 mappe importate (overworld, cap1_scuola, cap2_stazione) + 1 background combat</item>
+    <item>Player sprite sheet reale (4 direzioni x 3 frame)</item>
+    <item>6 NPC con 8 frame ciascuno (kebabbaro, mei, nonno, poliziotto, student, turista)</item>
+    <item>Coniglio 5 varianti elementali (acqua/fuoco/legno/metallo/terra)</item>
+    <item>Transizioni fade tra episodi/aree</item>
+    <item>Pannello Opzioni slide-in (da titolo e da menu)</item>
+    <item>Tap-to-move con pathfinding BFS</item>
+    <item>Error overlay a video per debug mobile</item>
+  </done>
 
 </game_design_document>
