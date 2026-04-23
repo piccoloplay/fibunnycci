@@ -68,23 +68,9 @@ const Audio = {
 
         this._currentMusicId = id;
 
-        // Try loading the actual file first
-        const audio = new window.Audio();
-        audio.src = track.src;
-        audio.loop = true;
-        audio.volume = 0;
-
-        audio.addEventListener('canplaythrough', () => {
-            this._currentMusic = audio;
-            this._fadeIn(audio, 800);
-        }, { once: true });
-
-        audio.addEventListener('error', () => {
-            // File not found — use procedural music
-            this._playProceduralMusic(track.procedural || id);
-        }, { once: true });
-
-        audio.load();
+        // OGG assets aren't shipped — always go procedural. Requires AudioContext.
+        if (!this._initialized) return; // Will be retried by Audio.unlock() on first user gesture
+        this._playProceduralMusic(track.procedural || id);
     },
 
     stopMusic(fadeMs) {
@@ -148,6 +134,7 @@ const Audio = {
 
     _playProceduralMusic(type) {
         if (!this._initialized) return;
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
 
         const patterns = this._getMusicPattern(type);
         if (!patterns) return;
@@ -255,11 +242,19 @@ const Audio = {
 
     // ─── SFX GENERATOR (jsfxr-style) ───
 
-    // Play a procedurally generated sound
+    // Play a procedurally generated sound.
+    // Waits for ctx.resume() if the context is still suspended (iOS first-tap window).
     play(name) {
-        if (!this.enabled || !this._initialized) return;
+        if (!this.enabled) return;
+        if (!this._initialized) this.unlock();
+        if (!this._initialized) return; // unlock may fail outside a gesture
         const fn = this.SFX[name];
-        if (fn) fn.call(this);
+        if (!fn) return;
+        if (this.ctx.state === 'running') {
+            fn.call(this);
+        } else {
+            this.ctx.resume().then(() => fn.call(this)).catch(() => {});
+        }
     },
 
     SFX: {
