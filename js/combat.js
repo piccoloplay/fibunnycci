@@ -1182,11 +1182,11 @@ const Combat = {
             this._renderHPBars(ctx, w, h);
         }
 
-        // Draw creatures — HD sizes
+        // Draw creatures — HD sizes (128 gives pixel-perfect 2x on 128×128 PNG sprites)
         const playerX = w * 0.25;
         const cpuX = w * 0.75;
         const creatureY = h * 0.42;
-        const creatureSize = 55; // Much bigger for HD
+        const creatureSize = 128;
 
         if (this.playerCreature) {
             // Power-up aura (behind creature)
@@ -1197,20 +1197,21 @@ const Combat = {
             ctx.save();
             ctx.translate(playerX + pOff.x, creatureY + pOff.y);
             if (pOff.rotation) ctx.rotate(pOff.rotation);
-            Creatures.drawCreature(ctx, 0, 0, this.playerCreature, creatureSize * pOff.scale, this.playerAnim, this.playerAnimTimer);
+            // Player faces right toward the CPU — mirror the sprite horizontally.
+            Creatures.drawCreature(ctx, 0, 0, this.playerCreature, creatureSize * pOff.scale, this.playerAnim, this.playerAnimTimer, true);
             ctx.restore();
             // Element-swap swirl (on top of creature)
             if (this._elementSwapMs > 0) {
                 this._drawElementSwap(ctx, playerX, creatureY, creatureSize);
             }
-            // Name + element
+            // Name + element (below sprite: sprite half-height = creatureSize)
             ctx.textAlign = 'center';
-            UI.textOutline(ctx, this.playerCreature.creatureName, playerX, creatureY + 80, {
+            UI.textOutline(ctx, this.playerCreature.creatureName, playerX, creatureY + creatureSize + 24, {
                 color: '#fff', size: 20, bold: true, align: 'center'
             });
             if (this.playerCreature.element) {
                 const el = Creatures.ELEMENTS[this.playerCreature.element];
-                UI.textOutline(ctx, el.name, playerX, creatureY + 105, {
+                UI.textOutline(ctx, el.name, playerX, creatureY + creatureSize + 48, {
                     color: el.color, size: 16, bold: true, align: 'center'
                 });
             }
@@ -1220,14 +1221,14 @@ const Combat = {
             ctx.save();
             ctx.translate(cpuX + cOff.x, creatureY + cOff.y);
             if (cOff.rotation) ctx.rotate(cOff.rotation);
-            Creatures.drawCreature(ctx, 0, 0, this.cpuCreature, creatureSize * cOff.scale, this.cpuAnim, this.cpuAnimTimer);
+            Creatures.drawCreature(ctx, 0, 0, this.cpuCreature, creatureSize * cOff.scale, this.cpuAnim, this.cpuAnimTimer, false);
             ctx.restore();
-            UI.textOutline(ctx, this.cpuCreature.creatureName, cpuX, creatureY + 80, {
+            UI.textOutline(ctx, this.cpuCreature.creatureName, cpuX, creatureY + creatureSize + 24, {
                 color: '#fff', size: 20, bold: true, align: 'center'
             });
             if (this.cpuCreature.element) {
                 const el = Creatures.ELEMENTS[this.cpuCreature.element];
-                UI.textOutline(ctx, el.name, cpuX, creatureY + 105, {
+                UI.textOutline(ctx, el.name, cpuX, creatureY + creatureSize + 48, {
                     color: el.color, size: 16, bold: true, align: 'center'
                 });
             }
@@ -1651,7 +1652,7 @@ const Combat = {
         const creatureY = h * 0.42;
         const barW = 130;
         const barH = 12;
-        const offsetY = 84; // how far above the creature center
+        const offsetY = 150; // above the 256-px tall creature sprite
 
         // Player
         this._drawMiniHPBar(ctx, playerX, creatureY - offsetY, barW, barH, this.playerCreature);

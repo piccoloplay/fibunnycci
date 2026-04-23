@@ -203,7 +203,7 @@ const Creatures = {
     },
 
     // ─── MAIN DRAW ───
-    drawCreature(ctx, x, y, creature, size, anim, animTimer) {
+    drawCreature(ctx, x, y, creature, size, anim, animTimer, flipH) {
         const s = size || 30;
         const bob = anim === 'idle' ? Math.floor(Math.sin((animTimer || 0) * 0.003) * 2) : 0;
 
@@ -236,7 +236,7 @@ const Creatures = {
             } else if (anim === 'lose') {
                 shiftX = -Math.floor(Math.abs(Math.sin((animTimer || 0) * 0.02)) * 4);
             }
-            Sprites.draw(ctx, spriteKey, drawX + shiftX, drawY, scale);
+            Sprites.draw(ctx, spriteKey, drawX + shiftX, drawY, scale, flipH);
 
             // Element badge
             if (creature.element && this.ELEMENTS[creature.element]) {
