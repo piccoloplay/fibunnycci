@@ -46,7 +46,7 @@ const Game = {
         TitleScreen.init();
 
         this.state = 'title';
-        Audio.playMusic('title');
+        // Title screen stays silent — no music until the player actually starts.
         requestAnimationFrame(t => this.loop(t));
     },
 

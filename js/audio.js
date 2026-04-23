@@ -14,7 +14,7 @@ const Audio = {
     // Music tracks — a real src (MP3) is tried first, and if it 404s or fails
     // to decode we fall back to the procedural chiptune of the same feel.
     MUSIC: {
-        title:      { src: 'assets/audio/overworld.mp3',  procedural: 'title' },
+        title:      { src: null,                          procedural: null },
         villaggio:  { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_calm' },
         foresta:    { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_dark' },
         montagna:   { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_epic' },

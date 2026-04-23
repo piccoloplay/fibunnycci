@@ -518,7 +518,7 @@ const Touch = {
                 Game._syncGameState();
                 Game.state = 'title';
                 if (typeof TitleScreen !== 'undefined' && TitleScreen.init) TitleScreen.init();
-                Audio.playMusic('title');
+                Audio.stopMusic(400); // title screen is silent
                 break;
             case 'team':
                 TeamBuilder.open();
