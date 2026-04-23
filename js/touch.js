@@ -513,7 +513,6 @@ const Touch = {
 
         switch (item.id) {
             case 'home':
-                // Go back to the title screen (new-game / continue menu)
                 Game._syncGameState();
                 Game.state = 'title';
                 if (typeof TitleScreen !== 'undefined' && TitleScreen.init) TitleScreen.init();
@@ -523,22 +522,11 @@ const Touch = {
                 TeamBuilder.open();
                 Game.state = 'teambuilder';
                 break;
-            case 'bestiary':
+            case 'menu':
+                // Opens the main menu (where Bestiario / Inventario / Mappa / Salva live)
                 Game._syncGameState();
                 Menu.open(Game.gameState);
-                Menu.currentView = 'bestiary';
-                Game.state = 'menu';
-                break;
-            case 'inventory':
-                Game._syncGameState();
-                Menu.open(Game.gameState);
-                Menu.currentView = 'inventory';
-                Game.state = 'menu';
-                break;
-            case 'save':
-                Game._syncGameState();
-                Menu.open(Game.gameState);
-                Menu.currentView = 'save';
+                Menu.currentView = 'main';
                 Game.state = 'menu';
                 break;
         }

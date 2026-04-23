@@ -39,6 +39,11 @@ const Combat = {
     powerUpHpCostPct: 0.15,    // 15% of max HP
     powerUpDamageMult: 1.8,
 
+    // Visual FX timers (ms remaining)
+    _powerUpAuraMs: 0,          // orange/yellow concentric pulse while active
+    _elementSwapMs: 0,          // swirl + flash on player when element changes
+    _elementSwapColor: '#fff',
+
     // Timers & animation
     phaseTimer: 0,
     animTimer: 0,
@@ -157,6 +162,8 @@ const Combat = {
         this.playerUsedPowerUp = false;
         this.playerUsedElementSwap = false;
         this.playerNextAttackBuff = 1.0;
+        this._powerUpAuraMs = 0;
+        this._elementSwapMs = 0;
     },
 
     // ─── UPDATE ───
@@ -175,6 +182,7 @@ const Combat = {
             this.screenShake *= 0.9;
             if (this.screenShake < 0.5) this.screenShake = 0;
         }
+        if (this._elementSwapMs > 0) this._elementSwapMs = Math.max(0, this._elementSwapMs - dt);
 
         // Camera zoom: ease toward phase target, with a small punch boost from shake
         const baseZoom = this._phaseZoomTargets[this.phase] ?? 1.0;
@@ -344,6 +352,10 @@ const Combat = {
             const color = Creatures.ELEMENTS[newEl].color;
             this.screenFlash = 180;
             this.screenFlashColor = color;
+            // Swirl + flash FX on player creature
+            this._elementSwapMs = 1200;
+            this._elementSwapColor = color;
+            this.screenShake = 6;
             this.floatingTexts.push({
                 text: `Elemento → ${Creatures.ELEMENTS[newEl].name.toUpperCase()}`,
                 x: this._w / 2, y: this._h * 0.3,
@@ -1058,12 +1070,20 @@ const Combat = {
         const creatureSize = 55; // Much bigger for HD
 
         if (this.playerCreature) {
+            // Power-up aura (behind creature)
+            if (this.playerNextAttackBuff > 1) {
+                this._drawPowerUpAura(ctx, playerX, creatureY, creatureSize);
+            }
             const pOff = this._getAnimOffset(this.playerAnim, this.playerAnimTimer, false);
             ctx.save();
             ctx.translate(playerX + pOff.x, creatureY + pOff.y);
             if (pOff.rotation) ctx.rotate(pOff.rotation);
             Creatures.drawCreature(ctx, 0, 0, this.playerCreature, creatureSize * pOff.scale, this.playerAnim, this.playerAnimTimer);
             ctx.restore();
+            // Element-swap swirl (on top of creature)
+            if (this._elementSwapMs > 0) {
+                this._drawElementSwap(ctx, playerX, creatureY, creatureSize);
+            }
             // Name + element
             ctx.textAlign = 'center';
             UI.textOutline(ctx, this.playerCreature.creatureName, playerX, creatureY + 80, {
@@ -1105,6 +1125,75 @@ const Combat = {
         UI.textOutline(ctx, `${this.cpuMorraWins}`, w / 2 + 50, 28, { color: '#ff6080', size: 20, bold: true, align: 'center' });
 
         ctx.restore(); // End camera-zoom wrapper
+    },
+
+    // Orange/yellow pulsing rings behind the creature while Potenziamento buff is armed.
+    _drawPowerUpAura(ctx, cx, cy, size) {
+        const t = this.animTimer * 0.006;
+        ctx.save();
+        for (let i = 0; i < 3; i++) {
+            const phase = (t + i * 0.33) % 1;
+            const r = size * (0.9 + phase * 1.4);
+            const alpha = (1 - phase) * 0.55;
+            ctx.strokeStyle = i === 0 ? `rgba(255,204,68,${alpha})` : `rgba(255,140,40,${alpha})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        // Charge particles rising
+        ctx.fillStyle = 'rgba(255,220,100,0.8)';
+        for (let i = 0; i < 8; i++) {
+            const a = t * 2 + i * 0.8;
+            const rr = size * 0.9;
+            const px = cx + Math.cos(a) * rr;
+            const py = cy + Math.sin(a) * rr * 0.6 - ((t * 40 + i * 20) % 80);
+            ctx.fillRect(Math.round(px), Math.round(py), 3, 3);
+        }
+        ctx.restore();
+    },
+
+    // Rotating element-coloured ring + flash overlay on the creature when element is swapped.
+    _drawElementSwap(ctx, cx, cy, size) {
+        const progress = 1 - (this._elementSwapMs / 1200);
+        const color = this._elementSwapColor || '#ffffff';
+        const t = this.animTimer * 0.02;
+        ctx.save();
+        // Expanding ring
+        const r1 = size * (0.5 + progress * 1.3);
+        const alpha1 = Math.max(0, 1 - progress);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = alpha1;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r1, 0, Math.PI * 2);
+        ctx.stroke();
+        // Rotating dashed ring
+        ctx.setLineDash([10, 10]);
+        ctx.lineDashOffset = -t * 30;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = alpha1 * 0.9;
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.9, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Creature tint flash
+        ctx.globalAlpha = alpha1 * 0.5;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+        // Sparks
+        ctx.globalAlpha = alpha1;
+        ctx.fillStyle = color;
+        for (let i = 0; i < 12; i++) {
+            const a = i * Math.PI * 2 / 12 + t;
+            const rr = size * (0.5 + progress * 1.6);
+            const px = cx + Math.cos(a) * rr;
+            const py = cy + Math.sin(a) * rr;
+            ctx.fillRect(Math.round(px - 2), Math.round(py - 2), 4, 4);
+        }
+        ctx.restore();
     },
 
     _renderStageDetails(ctx, w, h, stage, t) {

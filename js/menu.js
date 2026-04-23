@@ -51,9 +51,14 @@ const Menu = {
         if (this.currentView === 'main') {
             this._handleMainTap(pos, w, h);
         } else {
-            // Back button (top left area)
-            if (pos.x < 120 && pos.y < 60) {
-                this.currentView = 'main';
+            // Bottom "Indietro" bar
+            if (this._isBackHit(pos, w, h)) {
+                if (this.currentView === 'creature_detail') {
+                    this.currentView = 'bestiary';
+                    this._bestiaryDetail = null;
+                } else {
+                    this.currentView = 'main';
+                }
                 Audio.play('cancel');
                 return;
             }
@@ -62,12 +67,6 @@ const Menu = {
             }
             if (this.currentView === 'bestiary') {
                 this._handleBestiaryTap(pos, w, h);
-            }
-            if (this.currentView === 'creature_detail') {
-                // Tap anywhere to go back
-                this.currentView = 'bestiary';
-                this._bestiaryDetail = null;
-                Audio.play('cancel');
             }
         }
     },
@@ -186,7 +185,7 @@ const Menu = {
 
     _renderBestiary(ctx, w, h) {
         UI.drawPanelBg(ctx, w, h, { dark: true });
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         UI.text(ctx, 'Bestiario', w / 2, 40, {
             color: '#ff8833', size: 26, bold: true, align: 'center'
@@ -231,7 +230,7 @@ const Menu = {
 
     _renderInventory(ctx, w, h) {
         UI.drawPanelBg(ctx, w, h, { dark: true });
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         UI.text(ctx, 'Inventario', w / 2, 40, {
             color: '#44cc66', size: 26, bold: true, align: 'center'
@@ -260,7 +259,7 @@ const Menu = {
 
     _renderSave(ctx, w, h) {
         UI.drawPanelBg(ctx, w, h, { dark: true });
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         UI.text(ctx, 'Salva Partita', w / 2, 45, {
             color: '#4488ff', size: 26, bold: true, align: 'center'
@@ -327,7 +326,7 @@ const Menu = {
         ctx.globalAlpha = 1;
 
         // Back button
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         // Creature name (big)
         UI.text(ctx, c.creatureName, w / 2, 55, {
@@ -427,12 +426,33 @@ const Menu = {
         });
     },
 
-    _drawBackButton(ctx) {
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        UI.roundRect(ctx, 12, 10, 100, 36, 10);
+    // Bottom back bar. Tap area checked in handleTap via _isBackHit().
+    BACK_BAR_H: 68,
+
+    _drawBackButton(ctx, w, h) {
+        const bh = this.BACK_BAR_H;
+        const by = h - bh;
+        const btnW = Math.min(260, w - 40);
+        const bx = (w - btnW) / 2;
+        // Bar background
+        ctx.fillStyle = 'rgba(10,10,30,0.9)';
+        ctx.fillRect(0, by, w, bh);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(0, by, w, 1);
+        // Button
+        ctx.fillStyle = 'rgba(160,160,255,0.18)';
+        UI.roundRect(ctx, bx, by + 10, btnW, bh - 20, 14);
         ctx.fill();
-        UI.text(ctx, '← Indietro', 62, 34, {
-            color: '#aab', size: 14, align: 'center'
+        ctx.strokeStyle = 'rgba(160,160,255,0.4)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, bx, by + 10, btnW, bh - 20, 14);
+        ctx.stroke();
+        UI.text(ctx, '← Indietro', w / 2, by + bh / 2 + 6, {
+            color: '#fff', size: 18, bold: true, align: 'center'
         });
+    },
+
+    _isBackHit(pos, w, h) {
+        return pos.y >= h - this.BACK_BAR_H;
     }
 };

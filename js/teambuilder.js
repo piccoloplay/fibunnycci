@@ -52,8 +52,8 @@ const TeamBuilder = {
     },
 
     _handleViewTap(pos, w, h) {
-        // Back button (top left)
-        if (pos.x < 100 && pos.y < 60) {
+        // Back button (bottom bar)
+        if (this._isBackHit(pos, w, h)) {
             this.close();
             Audio.play('cancel');
             return;
@@ -77,8 +77,8 @@ const TeamBuilder = {
     },
 
     _handleSwapTap(pos, w, h) {
-        // Back button
-        if (pos.x < 100 && pos.y < 60) {
+        // Back button (bottom bar)
+        if (this._isBackHit(pos, w, h)) {
             this.mode = 'view';
             Audio.play('cancel');
             return;
@@ -132,7 +132,7 @@ const TeamBuilder = {
         UI.drawPanelBg(ctx, w, h, { dark: true });
 
         // Back button
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         // Title
         UI.text(ctx, 'IL TUO TEAM', w / 2, 45, {
@@ -235,7 +235,7 @@ const TeamBuilder = {
     _renderSwap(ctx, w, h) {
         UI.drawPanelBg(ctx, w, h, { dark: true });
 
-        this._drawBackButton(ctx);
+        this._drawBackButton(ctx, w, h);
 
         UI.text(ctx, `Slot ${this.swapSlot + 1}: Scegli creatura`, w / 2, 45, {
             color: '#ffcc00', size: 22, bold: true, align: 'center'
@@ -315,13 +315,30 @@ const TeamBuilder = {
         }
     },
 
-    _drawBackButton(ctx) {
-        // Back arrow button (top left)
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        UI.roundRect(ctx, 12, 10, 80, 36, 10);
+    BACK_BAR_H: 68,
+
+    _drawBackButton(ctx, w, h) {
+        const bh = this.BACK_BAR_H;
+        const by = h - bh;
+        const btnW = Math.min(260, w - 40);
+        const bx = (w - btnW) / 2;
+        ctx.fillStyle = 'rgba(10,10,30,0.9)';
+        ctx.fillRect(0, by, w, bh);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(0, by, w, 1);
+        ctx.fillStyle = 'rgba(160,160,255,0.18)';
+        UI.roundRect(ctx, bx, by + 10, btnW, bh - 20, 14);
         ctx.fill();
-        UI.text(ctx, '← Indietro', 52, 34, {
-            color: '#aab', size: 13, align: 'center'
+        ctx.strokeStyle = 'rgba(160,160,255,0.4)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, bx, by + 10, btnW, bh - 20, 14);
+        ctx.stroke();
+        UI.text(ctx, '← Indietro', w / 2, by + bh / 2 + 6, {
+            color: '#fff', size: 18, bold: true, align: 'center'
         });
+    },
+
+    _isBackHit(pos, w, h) {
+        return pos.y >= h - this.BACK_BAR_H;
     }
 };

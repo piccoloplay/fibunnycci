@@ -594,9 +594,7 @@ const Game = {
     _navBarItems: [
         { id: 'home', label: 'Home', icon: 'home' },
         { id: 'team', label: 'Team', icon: 'team' },
-        { id: 'bestiary', label: 'Bestia', icon: 'bestiary' },
-        { id: 'inventory', label: 'Zaino', icon: 'inventory' },
-        { id: 'save', label: 'Salva', icon: 'save' }
+        { id: 'menu', label: 'Menu', icon: 'menu' }
     ],
     _navBarHeight: 100,
 

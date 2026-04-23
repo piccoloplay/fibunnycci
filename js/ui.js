@@ -418,22 +418,14 @@ const UI = {
                 ctx.beginPath(); ctx.moveTo(s * 0.25, -s * 0.25); ctx.lineTo(-s * 0.25, s * 0.25); ctx.stroke();
                 break;
             case 'menu':
-                // Home/hamburger
+                // Hamburger — three horizontal bars
                 ctx.fillStyle = '#fff';
-                // House shape
-                ctx.beginPath();
-                ctx.moveTo(0, -s * 0.4);
-                ctx.lineTo(-s * 0.35, -s * 0.05);
-                ctx.lineTo(-s * 0.25, -s * 0.05);
-                ctx.lineTo(-s * 0.25, s * 0.3);
-                ctx.lineTo(s * 0.25, s * 0.3);
-                ctx.lineTo(s * 0.25, -s * 0.05);
-                ctx.lineTo(s * 0.35, -s * 0.05);
-                ctx.closePath();
+                this.roundRect(ctx, -s * 0.4, -s * 0.3, s * 0.8, s * 0.12, 2);
                 ctx.fill();
-                // Door
-                ctx.fillStyle = this.colors.blue;
-                ctx.fillRect(-s * 0.08, s * 0.08, s * 0.16, s * 0.22);
+                this.roundRect(ctx, -s * 0.4, -s * 0.06, s * 0.8, s * 0.12, 2);
+                ctx.fill();
+                this.roundRect(ctx, -s * 0.4, s * 0.18, s * 0.8, s * 0.12, 2);
+                ctx.fill();
                 break;
         }
 

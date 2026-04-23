@@ -25,13 +25,22 @@ const Audio = {
     },
 
     init() {
-        // AudioContext requires user interaction first
+        // AudioContext requires user interaction first. On iOS Safari the
+        // context stays suspended until the first tap, so any playMusic()
+        // before that is a no-op. After the first gesture we retry whatever
+        // music id is currently set.
         const resume = () => {
-            if (!this._initialized) {
+            const firstTime = !this._initialized;
+            if (firstTime) {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 this._initialized = true;
             }
             if (this.ctx.state === 'suspended') this.ctx.resume();
+            if (firstTime && this._currentMusicId && !this._procInterval && !this._currentMusic) {
+                const pending = this._currentMusicId;
+                this._currentMusicId = null; // force restart path
+                this.playMusic(pending);
+            }
         };
         document.addEventListener('click', resume, { once: false });
         document.addEventListener('touchstart', resume, { once: false });
