@@ -74,27 +74,19 @@ const Player = {
         const newGridX = this.gridX + dx;
         const newGridY = this.gridY + dy;
 
-        // For diagonals, check both the target AND the two adjacent tiles
-        // This prevents cutting through corners
+        // For diagonals: require all three tiles to be free (target + both
+        // cardinal neighbours, to prevent corner-cutting). If any is blocked
+        // we STOP — no automatic sliding onto a cardinal axis, it causes
+        // wall-hugging jitter. The user has to release the key to move.
         if (dx !== 0 && dy !== 0) {
             const walkDiag = GameMap.isWalkable(newGridX, newGridY);
-            const walkH = GameMap.isWalkable(this.gridX + dx, this.gridY);
-            const walkV = GameMap.isWalkable(this.gridX, this.gridY + dy);
-            const npcDiag = NPC.getAt(newGridX, newGridY);
-            const npcH = NPC.getAt(this.gridX + dx, this.gridY);
-            const npcV = NPC.getAt(this.gridX, this.gridY + dy);
-
+            const walkH    = GameMap.isWalkable(this.gridX + dx, this.gridY);
+            const walkV    = GameMap.isWalkable(this.gridX, this.gridY + dy);
+            const npcDiag  = NPC.getAt(newGridX, newGridY);
+            const npcH     = NPC.getAt(this.gridX + dx, this.gridY);
+            const npcV     = NPC.getAt(this.gridX, this.gridY + dy);
             if (!walkDiag || !walkH || !walkV || npcDiag || npcH || npcV) {
-                // Try sliding along one axis
-                if (walkH && !npcH) {
-                    dy = 0;
-                    this.direction = dx === -1 ? 'left' : 'right';
-                } else if (walkV && !npcV) {
-                    dx = 0;
-                    this.direction = dy === -1 ? 'up' : 'down';
-                } else {
-                    return; // Blocked
-                }
+                return;
             }
         } else {
             // Cardinal direction

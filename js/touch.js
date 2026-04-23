@@ -473,6 +473,18 @@ const Touch = {
         const dx = next.x - Player.gridX;
         const dy = next.y - Player.gridY;
 
+        // If the next step isn't adjacent (the player got knocked off the
+        // path) or is no longer walkable / an NPC stepped into it, cancel
+        // the path instead of teleporting or trying to plough through —
+        // this is what was causing the "jittery when colliding" feel.
+        const adj = (Math.abs(dx) <= 1 && Math.abs(dy) <= 1);
+        if (!adj ||
+            !GameMap.isWalkable(next.x, next.y) ||
+            NPC.getAt(next.x, next.y)) {
+            this.cancelPath();
+            return;
+        }
+
         if (dx < 0) Input.keys['ArrowLeft'] = true;
         if (dx > 0) Input.keys['ArrowRight'] = true;
         if (dy < 0) Input.keys['ArrowUp'] = true;
