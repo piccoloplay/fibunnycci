@@ -2,10 +2,10 @@
     "id": "ep01",
     "title": "Capitolo 1 — Il Risveglio del Coniglio",
     "map": {
-        "image": "assets/sprites/maps/map_cap1_scuola.png",
-        "collision": "assets/sprites/maps/map_cap1_scuola_collision.png"
+        "image": "assets/sprites/maps/map_overworld.png",
+        "collision": "assets/sprites/maps/map_overworld_collision.png"
     },
-    "playerStart": { "x": 9, "y": 14 },
+    "playerStart": { "x": 9, "y": 9 },
     "exits": [],
     "npcs": [
         {
@@ -13,7 +13,7 @@
             "name": "Kebabbaro",
             "sprite": "kebabbaro",
             "x": 15,
-            "y": 6,
+            "y": 7,
             "direction": "down",
             "color": "#d6a361",
             "dialogue": [[
@@ -40,8 +40,8 @@
             "id": "nonno",
             "name": "Nonno",
             "sprite": "nonno",
-            "x": 4,
-            "y": 13,
+            "x": 6,
+            "y": 4,
             "direction": "down",
             "color": "#8b6843",
             "dialogue": [[
@@ -55,7 +55,7 @@
             "name": "Kuro il Ribelle",
             "sprite": "student",
             "x": 13,
-            "y": 12,
+            "y": 10,
             "direction": "down",
             "color": "#2c4a8a",
             "dialogue": [[
@@ -73,8 +73,8 @@
             "id": "poliziotto_boss",
             "name": "Capitano Shiro",
             "sprite": "poliziotto",
-            "x": 3,
-            "y": 4,
+            "x": 8,
+            "y": 8,
             "direction": "down",
             "color": "#557733",
             "dialogue": [[
