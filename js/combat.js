@@ -1082,6 +1082,15 @@ const Combat = {
                 dy = (h - dh) / 2;
             }
             ctx.drawImage(img, dx, dy, dw, dh);
+
+            // Dark gradient over the lower half so the action cards / morra
+            // buttons / turn counter sit on readable contrast.
+            const uiGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+            uiGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            uiGrad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
+            uiGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+            ctx.fillStyle = uiGrad;
+            ctx.fillRect(0, h * 0.5, w, h * 0.5);
         } else {
             // ── SKY ──
             const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
