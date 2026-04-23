@@ -545,18 +545,15 @@ const Game = {
     },
 
     _renderOverworld(ctx, w, h) {
-        // Camera follows player with zoom
+        // Camera follows player with zoom. Player stays centered on screen
+        // at all times — if we run off the edge of the map the background
+        // (already filled black in render()) shows through.
         const zoom = 2.0; // integer zoom = clean 2x nearest-neighbour on 64px tile PNGs
         const ts = GameMap.TILE_SIZE * GameMap.SCALE;
         const viewW = w / zoom;
         const viewH = h / zoom;
-        let camX = Player.pixelX - viewW / 2 + ts / 2;
-        let camY = Player.pixelY - viewH / 2 + ts / 2;
-
-        const mapW = GameMap.width * ts;
-        const mapH = GameMap.height * ts;
-        camX = Math.max(0, Math.min(camX, mapW - viewW));
-        camY = Math.max(0, Math.min(camY, mapH - viewH));
+        const camX = Player.pixelX - viewW / 2 + ts / 2;
+        const camY = Player.pixelY - viewH / 2 + ts / 2;
 
         // Apply zoom
         ctx.save();
