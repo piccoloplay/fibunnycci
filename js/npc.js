@@ -5,6 +5,7 @@ const NPC = {
         this.list = episodeData.npcs.map(data => ({
             id: data.id,
             name: data.name,
+            sprite: data.sprite || null,      // new: PNG sprite key (e.g. 'kebabbaro')
             gridX: data.x,
             gridY: data.y,
             direction: data.direction || 'down',
@@ -54,12 +55,19 @@ const NPC = {
             const cx = x + ts / 2;
 
             // Pixel shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
-            const sh = ts / 16;
-            ctx.fillRect(Math.round(x + 4 * sh), Math.round(y + 13 * sh), Math.ceil(8 * sh), Math.ceil(2 * sh));
+            ctx.fillStyle = 'rgba(0,0,0,0.28)';
+            ctx.beginPath();
+            ctx.ellipse(cx, y + ts - 8, ts * 0.25, ts * 0.08, 0, 0, Math.PI * 2);
+            ctx.fill();
 
-            // Pixel NPC body tinted with npc.color
-            Sprites.drawNpc(ctx, Math.round(x), Math.round(y), ts / 16, npc.color);
+            // Prefer PNG sprite when available, else fall back to tinted bitmap
+            const spriteKey = npc.sprite ? `npc_${npc.sprite}_0` : null;
+            const spriteImg = spriteKey && Sprites._cache[spriteKey];
+            if (spriteImg) {
+                ctx.drawImage(spriteImg, Math.round(x), Math.round(y), ts, ts);
+            } else {
+                Sprites.drawNpc(ctx, Math.round(x), Math.round(y), ts / 16, npc.color);
+            }
 
             // Name tag above NPC
             ctx.fillStyle = 'rgba(0,0,0,0.55)';

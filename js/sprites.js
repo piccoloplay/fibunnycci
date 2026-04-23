@@ -281,6 +281,20 @@ const Sprites = {
         this._buildHands();
         this.loadTileImages();
         this.loadPlayerSprites();
+        this.loadNpcSprites();
+    },
+
+    NPC_NAMES: ['student', 'mei', 'nonno', 'kebabbaro', 'poliziotto', 'turista'],
+    loadNpcSprites() {
+        for (const name of this.NPC_NAMES) {
+            for (let f = 0; f < 8; f++) {
+                const key = `npc_${name}_${f}`;
+                const img = new Image();
+                img.onload = () => { this._cache[key] = img; };
+                img.onerror = () => {};
+                img.src = `assets/sprites/characters/${key}.png`;
+            }
+        }
     },
 
     // Preload the 12 Piccoloplay PNGs into _cache (one per direction × frame).
