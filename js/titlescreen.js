@@ -6,11 +6,13 @@ const TitleScreen = {
     ITEMS: [],
 
     init() {
+        this.active = true;
         this.hasSave = Save.load(0) !== null || Save.load(1) !== null || Save.load(2) !== null || Save.load('auto') !== null;
         this.ITEMS = this.hasSave
             ? ['Continua', 'Nuova Partita', 'Opzioni']
             : ['Nuova Partita', 'Opzioni'];
         this.selectedIndex = 0;
+        this.animTimer = 0;
     },
 
     update(dt) {
