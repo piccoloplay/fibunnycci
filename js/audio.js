@@ -11,18 +11,19 @@ const Audio = {
     _nextMusic: null,         // For crossfade
     _fadeInterval: null,
 
-    // Music tracks — file paths or procedural IDs
+    // Music tracks — a real src (MP3) is tried first, and if it 404s or fails
+    // to decode we fall back to the procedural chiptune of the same feel.
     MUSIC: {
-        title:      { src: 'assets/audio/title.ogg',      procedural: 'title' },
-        villaggio:  { src: 'assets/audio/villaggio.ogg',   procedural: 'overworld_calm' },
-        foresta:    { src: 'assets/audio/foresta.ogg',     procedural: 'overworld_dark' },
-        montagna:   { src: 'assets/audio/montagna.ogg',    procedural: 'overworld_epic' },
-        tempio:     { src: 'assets/audio/tempio.ogg',      procedural: 'overworld_mystic' },
-        citta:      { src: 'assets/audio/citta.ogg',       procedural: 'overworld_urban' },
-        combat:     { src: 'assets/audio/combat.ogg',      procedural: 'combat' },
-        combat_mystical: { src: 'assets/audio/mystical.ogg', procedural: 'combat_mystical' },
-        victory:    { src: 'assets/audio/victory.ogg',     procedural: 'victory_fanfare' },
-        defeat:     { src: 'assets/audio/defeat.ogg',      procedural: 'defeat_theme' }
+        title:      { src: 'assets/audio/overworld.mp3',  procedural: 'title' },
+        villaggio:  { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_calm' },
+        foresta:    { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_dark' },
+        montagna:   { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_epic' },
+        tempio:     { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_mystic' },
+        citta:      { src: 'assets/audio/overworld.mp3',  procedural: 'overworld_urban' },
+        combat:     { src: 'assets/audio/battle.mp3',     procedural: 'combat' },
+        combat_mystical: { src: 'assets/audio/wudang.mp3', procedural: 'combat_mystical' },
+        victory:    { src: null,                          procedural: 'victory_fanfare' },
+        defeat:     { src: null,                          procedural: 'defeat_theme' }
     },
 
     init() {
@@ -69,8 +70,40 @@ const Audio = {
 
         this._currentMusicId = id;
 
-        // OGG assets aren't shipped — always go procedural. Requires AudioContext.
-        if (!this._initialized) return; // Will be retried by Audio.unlock() on first user gesture
+        // Prefer the real MP3 when we have one; fall back to procedural on
+        // load error or if no src is configured.
+        if (track.src) {
+            const audio = new window.Audio();
+            audio.src = track.src;
+            audio.loop = true;
+            audio.preload = 'auto';
+            audio.volume = 0;
+
+            let fellBack = false;
+            const fallback = () => {
+                if (fellBack) return;
+                fellBack = true;
+                if (this._currentMusicId !== id) return; // user already switched
+                if (!this._initialized) return; // unlock() will retry
+                this._playProceduralMusic(track.procedural || id);
+            };
+
+            audio.addEventListener('canplaythrough', () => {
+                if (fellBack) return;
+                if (this._currentMusicId !== id) return;
+                this._currentMusic = audio;
+                this._fadeIn(audio, 800);
+            }, { once: true });
+            audio.addEventListener('error', fallback, { once: true });
+            audio.addEventListener('stalled', fallback, { once: true });
+
+            // iOS Safari requires the AudioContext to be live before media plays.
+            // If we're still locked, wait — unlock() will retry once the user taps.
+            audio.load();
+            return;
+        }
+
+        if (!this._initialized) return;
         this._playProceduralMusic(track.procedural || id);
     },
 
