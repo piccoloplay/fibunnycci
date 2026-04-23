@@ -106,7 +106,8 @@ const Dialogue = {
     // ─── NORMAL DIALOGUE (textbox over overworld) ───
     _renderNormal(ctx, w, h) {
         const boxH = 180;
-        const boxY = h * 0.35;
+        // Anchored near the bottom so it doesn't cover creatures/NPCs on screen.
+        const boxY = h - boxH - 160;
         const boxX = 24;
         const boxW = w - 48;
 
