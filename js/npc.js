@@ -13,7 +13,8 @@ const NPC = {
             dialogue: data.dialogue,
             dialogueIndex: 0,
             triggerTris: data.triggerTris || null,
-            triggerCombat: data.triggerCombat || null
+            triggerCombat: data.triggerCombat || null,
+            triggerVN: data.triggerVN || null
         }));
     },
 
