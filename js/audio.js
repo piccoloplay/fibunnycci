@@ -25,26 +25,33 @@ const Audio = {
     },
 
     init() {
-        // AudioContext requires user interaction first. On iOS Safari the
-        // context stays suspended until the first tap, so any playMusic()
-        // before that is a no-op. After the first gesture we retry whatever
-        // music id is currently set.
-        const resume = () => {
-            const firstTime = !this._initialized;
-            if (firstTime) {
+        // AudioContext requires user interaction first. We attach unlock hooks
+        // on window (capture phase) AND expose Audio.unlock() for input modules
+        // to call directly from their event handlers — iOS Safari is fussy.
+        const resume = () => this.unlock();
+        window.addEventListener('click', resume, { capture: true, passive: true });
+        window.addEventListener('touchstart', resume, { capture: true, passive: true });
+        window.addEventListener('pointerdown', resume, { capture: true, passive: true });
+        window.addEventListener('keydown', resume, { capture: true, passive: true });
+    },
+
+    // Idempotent — safe to call from every tap/key handler.
+    unlock() {
+        const firstTime = !this._initialized;
+        if (firstTime) {
+            try {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 this._initialized = true;
-            }
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            if (firstTime && this._currentMusicId && !this._procInterval && !this._currentMusic) {
-                const pending = this._currentMusicId;
-                this._currentMusicId = null; // force restart path
-                this.playMusic(pending);
-            }
-        };
-        document.addEventListener('click', resume, { once: false });
-        document.addEventListener('touchstart', resume, { once: false });
-        document.addEventListener('keydown', resume, { once: false });
+            } catch (e) { return; }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+        }
+        if (firstTime && this._currentMusicId && !this._procInterval && !this._currentMusic) {
+            const pending = this._currentMusicId;
+            this._currentMusicId = null; // force restart
+            this.playMusic(pending);
+        }
     },
 
     // ─── MUSIC PLAYBACK ───
@@ -315,6 +322,30 @@ const Audio = {
             Audio._tone(0.03, 400, 600, 'triangle', 0.15);
             setTimeout(() => Audio._tone(0.03, 500, 700, 'triangle', 0.12), 40);
             setTimeout(() => Audio._tone(0.04, 600, 800, 'triangle', 0.1), 80);
+        },
+
+        // ── SPECIAL MOVES ──
+        powerUp() {
+            // Deep gong + rising chi + low rumble
+            Audio._tone(0.5, 110, 90, 'triangle', 0.35);
+            setTimeout(() => Audio._tone(0.35, 220, 440, 'sawtooth', 0.22), 60);
+            setTimeout(() => Audio._tone(0.4, 330, 660, 'square', 0.18), 180);
+            setTimeout(() => Audio._noise(0.25, 200, 80, 'square', 0.12), 260);
+        },
+
+        elementSwap() {
+            // Sparkly ascending chime (pentatonic-ish)
+            const notes = [523, 659, 784, 988, 1175];
+            notes.forEach((f, i) => {
+                setTimeout(() => Audio._tone(0.12, f, f * 1.1, 'sine', 0.22), i * 50);
+            });
+            setTimeout(() => Audio._noise(0.18, 3000, 1000, 'sine', 0.08), 260);
+        },
+
+        dimensionExit() {
+            // Quick whoosh back to reality
+            Audio._tone(0.18, 600, 200, 'sine', 0.2);
+            setTimeout(() => Audio._noise(0.15, 400, 100, 'sine', 0.1), 80);
         },
 
         // ── OVERWORLD ──

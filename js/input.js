@@ -6,6 +6,7 @@ const Input = {
     init() {
         window.addEventListener('keydown', e => {
             e.preventDefault();
+            if (typeof Audio !== 'undefined' && Audio.unlock) Audio.unlock();
             this.keys[e.key] = true;
         });
         window.addEventListener('keyup', e => {

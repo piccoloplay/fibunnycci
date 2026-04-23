@@ -331,6 +331,7 @@ const Combat = {
             this.screenFlash = 200;
             this.screenFlashColor = '#ff8844';
             this.screenShake = 6;
+            Audio.play('powerUp');
             this.floatingTexts.push({
                 text: `-${cost} HP`, x: this._w * 0.25, y: this._h * 0.35,
                 color: '#ff8844', size: 22, life: 0, maxLife: 1200, vy: -1.2
@@ -373,7 +374,7 @@ const Combat = {
             if (!newEl) return;
             this.playerCreature.element = newEl;
             this.playerUsedElementSwap = true;
-            Audio.play('confirm');
+            Audio.play('elementSwap');
             this._vibrate(40);
             const color = Creatures.ELEMENTS[newEl].color;
             this.screenFlash = 180;
@@ -732,6 +733,7 @@ const Combat = {
         if (attacker === this.playerCreature && this.playerNextAttackBuff > 1) {
             damage *= this.playerNextAttackBuff;
             this.playerNextAttackBuff = 1.0;
+            Audio.play('dimensionExit');
         }
 
         // Step 5: Crit

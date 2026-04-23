@@ -51,6 +51,7 @@ const Touch = {
 
         // Mouse events (desktop) — same behavior as tap
         canvas.addEventListener('mousedown', e => {
+            if (Audio.unlock) Audio.unlock();
             const pos = this._getMousePos(e);
             this._holding = true;
             this._holdX = pos.x;
@@ -101,6 +102,7 @@ const Touch = {
 
     _onTouchStart(e) {
         e.preventDefault();
+        if (Audio.unlock) Audio.unlock();
         const pos = this._getCanvasPos(e.touches[0]);
         this._holding = true;
         this._holdX = pos.x;
