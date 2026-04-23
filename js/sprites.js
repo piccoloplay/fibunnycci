@@ -280,6 +280,25 @@ const Sprites = {
         this._buildCreatures();
         this._buildHands();
         this.loadTileImages();
+        this.loadPlayerSprites();
+    },
+
+    // Preload the 12 Piccoloplay PNGs into _cache (one per direction × frame).
+    // Overrides the procedural bunny sprites once the PNGs arrive from the network.
+    PLAYER_FRAMES: [
+        ['down', 0], ['down', 1], ['down', 2],
+        ['up', 0],   ['up', 1],   ['up', 2],
+        ['right', 0], ['right', 1], ['right', 2],
+        ['left', 0],  ['left', 1],  ['left', 2]
+    ],
+    loadPlayerSprites() {
+        for (const [dir, frame] of this.PLAYER_FRAMES) {
+            const key = `player_${dir}_${frame}`;
+            const img = new Image();
+            img.onload = () => { this._cache[key] = img; };
+            img.onerror = () => { /* keep procedural fallback */ };
+            img.src = `assets/sprites/characters/${key}.png`;
+        }
     },
 
     // Morra hands: fist (sasso), open palm (carta), scissors (forbice) — 16×16 left-facing.

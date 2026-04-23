@@ -150,16 +150,28 @@ const Player = {
         const sh = ts / 16;
         ctx.fillRect(Math.round(x + 4 * sh), Math.round(y + 13 * sh), Math.ceil(8 * sh), Math.ceil(2 * sh));
 
-        // Pick sprite based on facing + walk frame
+        // Pick sprite based on facing + walk frame. All 4 directions have
+        // dedicated frames now (see assets/sprites/characters/) — no flip needed.
         const dir = this.direction || 'down';
         let face = 'down';
-        let flip = false;
         if (dir.includes('up')) face = 'up';
-        else if (dir.includes('left')) { face = 'right'; flip = true; }
+        else if (dir.includes('left')) face = 'left';
         else if (dir.includes('right')) face = 'right';
-        const frame = (this.moving && (this.animFrame % 2 === 1)) ? 1 : 0;
+        // 3-frame walk cycle: 0=step-L, 1=idle, 2=step-R. Idle when not moving.
+        let frame = 1;
+        if (this.moving) {
+            const phase = this.animFrame % 4;
+            frame = phase === 0 ? 0 : phase === 2 ? 2 : 1;
+        }
         const key = `player_${face}_${frame}`;
-        Sprites.draw(ctx, key, Math.round(x), Math.round(y), ts / 16, flip);
+        if (Sprites._cache[key]) {
+            // PNG from raw sheet: draw at tile-size 1:1 (it was saved already at 64×64)
+            const img = Sprites._cache[key];
+            ctx.drawImage(img, Math.round(x), Math.round(y), ts, ts);
+        } else {
+            // Fallback to procedural bunny scale (16 native × ts/16)
+            Sprites.draw(ctx, key, Math.round(x), Math.round(y), ts / 16);
+        }
         return;
 
         const bob = this.moving ? Math.sin(this.animFrame * Math.PI / 2) * 2 : 0;
