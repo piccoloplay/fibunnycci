@@ -286,7 +286,13 @@ const Sprites = {
     },
 
     CREATURE_VARIANTS: {
-        coniglio: ['metallo', 'fuoco', 'acqua', 'terra', 'legno']
+        coniglio: ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        bue:      ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        cane:     ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        cavallo:  ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        drago:    ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        scimmia:  ['metallo', 'fuoco', 'acqua', 'terra', 'legno'],
+        tigre:    ['metallo', 'fuoco', 'acqua', 'terra', 'legno']
     },
     loadCreatureVariants() {
         for (const [id, els] of Object.entries(this.CREATURE_VARIANTS)) {

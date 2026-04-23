@@ -32,21 +32,30 @@ Carica ogni PNG in `sprites/raw/` con **questi nomi esatti**
 ### Player
 - `player_piccoloplay.png` — sprite sheet 1024×1024, 4×3, Piccoloplay
 
-### 12 Creature dello zodiaco (un file ciascuna)
-Stato attuale:
-- ✅ `creature_coniglio.png` → processato in `creatures/creature_coniglio_{acqua,fuoco,legno,metallo,terra}.png`
-- 🟡 Nella root del repo, ancora da spostare in `sprites/raw/` e processare con `tools/split_creature_variants.py`:
-  - `Dog.png` → `creature_cane.png`
-  - `Dragon.png` → `creature_drago.png`
-  - `Horse.png` → `creature_cavallo.png`
-  - `Monkey.png` → `creature_scimmia.png`
-  - `Oz.png` → `creature_bue.png`
-  - `Tiger.png` → `creature_tigre.png`
-- ⬜ Da creare: `creature_topo.png`, `creature_serpente.png`, `creature_maiale.png`, `creature_gallo.png`, `creature_capra.png`
+### 12 Creature dello zodiaco (sheet 5-varianti, uno per animale)
+
+Ogni sheet ha le 5 varianti elementali allineate left→right nell'ordine
+**metallo, fuoco, acqua, terra, legno**. Lo script `tools/split_creature_variants.py`
+ritaglia, chroma-key del background, trim, bottom-align su canvas 128×128
+e produce 5 PNG: `creature_<animale>_<elemento>.png`.
+
+- ✅ Processati (sheet in `sprites/raw/` + 5 PNG in `sprites/creatures/`):
+  coniglio, bue, cane, cavallo, drago, scimmia, tigre (**35 PNG totali**)
+- ⬜ Da generare: topo, serpente, maiale, gallo, capra
 
 Nomi "brand" (Aqualop, Ironrat, Pyropony, Dracofibo, Vinesnake, Terrabull,
 Emberclaw, Bambooki, Flamepig, Goldcluck, Sandpup, Lunabaa) sono i nomi
 elementali: la stessa base animale cambia nome a seconda dell'elemento.
+
+Comando per rigenerare una creatura:
+
+```bash
+python tools/split_creature_variants.py \
+    --image assets/sprites/raw/<animale>_sheet.png \
+    --creature <animale> \
+    --elements metallo,fuoco,acqua,terra,legno \
+    --out assets/sprites/creatures/
+```
 
 ### NPC principali
 - `npc_kebabbaro.png`       — il kebabbaro di Arezzo
