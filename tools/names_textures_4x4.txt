@@ -1,0 +1,17 @@
+# 16 nomi per un tileset 4x4 di texture base (una per riga, L→R, T→B)
+grass
+tall_grass
+dirt
+cobblestone
+sand
+shallow_water
+deep_water
+planks
+stone_wall
+kawara_roof
+flowers
+petals_stone
+bamboo_floor
+asphalt
+marble_pink
+snow

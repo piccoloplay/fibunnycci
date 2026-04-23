@@ -1,0 +1,17 @@
+{
+  "_comment": "Manual bounding boxes for a GPT tileset with non-uniform cells. Misura le coordinate in un editor (Preview su Mac, GIMP, Photoshop, o anche https://squoosh.app): ogni entry è {name, x, y, w, h} in pixel dell'immagine originale.",
+  "tiles": [
+    { "name": "grass",          "x":    0, "y":   0, "w": 183, "h": 183 },
+    { "name": "tall_grass",     "x":  183, "y":   0, "w": 183, "h": 183 },
+    { "name": "dirt",           "x":  366, "y":   0, "w": 183, "h": 183 },
+    { "name": "cobblestone",    "x":  549, "y":   0, "w": 183, "h": 183 },
+    { "name": "sand",           "x":  732, "y":   0, "w": 183, "h": 183 },
+    { "name": "shallow_water",  "x":  915, "y":   0, "w": 183, "h": 183 },
+    { "name": "deep_water",     "x": 1098, "y":   0, "w": 183, "h": 183 },
+
+    { "name": "building_shrine", "x":  700, "y": 420, "w": 160, "h": 240 },
+    { "name": "bridge_red",      "x": 1120, "y": 420, "w": 160, "h": 240 },
+    { "name": "lantern_stone",   "x":   10, "y": 680, "w":  90, "h": 150 },
+    { "name": "jizo_statue",     "x":  110, "y": 680, "w":  90, "h": 150 }
+  ]
+}
