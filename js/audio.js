@@ -6,10 +6,15 @@ const Audio = {
     _initialized: false,
 
     // ─── MUSIC SYSTEM ───
-    _currentMusic: null,      // HTMLAudioElement currently playing (volume fully up)
-    _currentMusicId: null,    // id of track we're targeting (may still be loading)
-    _pendingLoad: null,       // HTMLAudioElement currently being fetched — cancelled on switch
-    _fadeInterval: null,      // fade-in timer for _currentMusic
+    // iOS Safari treats every new <audio> element as needing its own user
+    // gesture for the first play, so we use ONE persistent element and just
+    // swap its src on every switch. Once unlocked on the first tap the element
+    // stays live for the rest of the session.
+    _audio: null,             // persistent HTMLAudioElement (lazy)
+    _currentMusicId: null,    // id we're targeting (may still be loading)
+    _fadeInTimer: null,
+    _fadeOutTimer: null,
+    _pendingSrcSwitch: null,  // queued src we want the element to load next
 
     // Music tracks — a real src (MP3) is tried first, and if it 404s or fails
     // to decode we fall back to the procedural chiptune of the same feel.
@@ -49,113 +54,113 @@ const Audio = {
         if (this.ctx && this.ctx.state === 'suspended') {
             this.ctx.resume().catch(() => {});
         }
-        // iOS Safari: HTMLAudio.play() queued before the first user gesture
-        // returns a rejected promise and the element ends up paused. After
-        // the gesture we retry play() on whichever element is currently live.
-        if (this._currentMusic && this._currentMusic.paused) {
-            this._currentMusic.play().catch(() => {});
+        // iOS: the persistent <audio> element needs its first play() inside
+        // a user gesture. If it has a src set but is paused, retry now.
+        if (this._audio && this._audio.src && this._audio.paused) {
+            const p = this._audio.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
         }
-        if (this._pendingLoad && this._pendingLoad.paused) {
-            // Will start once canplaythrough fires — no-op here.
-        }
-        // Procedural fallback: if a track was requested before init and
-        // nothing is playing yet, restart it now.
-        if (firstTime && this._currentMusicId && !this._procInterval && !this._currentMusic && !this._pendingLoad) {
-            const pending = this._currentMusicId;
-            this._currentMusicId = null; // force restart
-            this.playMusic(pending);
+        // Procedural fallback if a no-src track was queued before init.
+        if (firstTime && this._currentMusicId && !this._procInterval) {
+            const t = this.MUSIC[this._currentMusicId];
+            if (t && !t.src && t.procedural) this._playProceduralMusic(t.procedural);
         }
     },
 
     // ─── MUSIC PLAYBACK ───
 
+    _ensureAudioElement() {
+        if (this._audio) return this._audio;
+        const a = new window.Audio();
+        a.loop = true;
+        a.preload = 'auto';
+        a.volume = 0;
+        this._audio = a;
+        return a;
+    },
+
     playMusic(id) {
         if (!this.enabled) return;
-        if (this._currentMusicId === id && (this._currentMusic || this._procInterval)) {
-            return; // same id and actually playing — no-op
-        }
 
         const track = this.MUSIC[id];
-        if (!track) return;
+        if (!track) { this.stopMusic(300); return; }
 
-        // Cancel absolutely everything in flight: pending loads, fades,
-        // procedural intervals. The previous audio element gets a short
-        // fade-out so the crossfade is smooth.
-        this._cancelPendingLoad();
-        this._stopFadeIn();
-        if (this._currentMusic) {
-            this._fadeOutAndRelease(this._currentMusic, 400);
-            this._currentMusic = null;
+        // Same id and already playing (or finishing its fade-in) → no-op.
+        if (this._currentMusicId === id) {
+            const a = this._audio;
+            if (a && !a.paused && a.src && a.src.indexOf(track.src || '') !== -1) return;
+            if (this._procInterval && !track.src) return;
         }
-        this._stopProcedural();
 
         this._currentMusicId = id;
 
-        // No src → go straight to procedural
+        // Cancel every fade and the procedural loop.
+        this._stopFadeIn();
+        this._stopFadeOut();
+        this._stopProcedural();
+
+        // No file → procedural or silence.
         if (!track.src) {
-            if (this._initialized) this._playProceduralMusic(track.procedural || id);
+            const audio = this._audio;
+            if (audio && !audio.paused) {
+                this._fadeOut(audio, 300, () => { try { audio.pause(); } catch (e) {} });
+            }
+            if (this._initialized && track.procedural) {
+                this._playProceduralMusic(track.procedural);
+            }
             return;
         }
 
-        // Real MP3 path
-        const audio = new window.Audio();
-        audio.src = track.src;
-        audio.loop = true;
-        audio.preload = 'auto';
-        audio.volume = 0;
-        this._pendingLoad = audio;
-
-        let fellBack = false;
-        const fallback = () => {
-            if (fellBack) return;
-            fellBack = true;
-            if (this._currentMusicId !== id) return;
-            if (this._pendingLoad === audio) this._pendingLoad = null;
-            if (this._initialized) this._playProceduralMusic(track.procedural || id);
+        // Real file. One persistent element, just swap src. Quick fade-out if
+        // something is already playing so the handoff isn't jarring.
+        const audio = this._ensureAudioElement();
+        const doSwitch = () => {
+            if (this._currentMusicId !== id) return; // user switched again during the fade
+            try { audio.pause(); } catch (e) {}
+            try {
+                audio.src = track.src;
+                audio.load();
+            } catch (e) {}
+            const p = audio.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+            this._fadeIn(audio, 500);
         };
 
-        audio.addEventListener('canplaythrough', () => {
-            if (fellBack) return;
-            if (this._currentMusicId !== id) {
-                // Race: the user already switched to another track, drop this one.
-                try { audio.pause(); audio.src = ''; } catch (e) {}
-                return;
-            }
-            this._pendingLoad = null;
-            this._currentMusic = audio;
-            this._fadeIn(audio, 600);
-        }, { once: true });
-        audio.addEventListener('error', fallback, { once: true });
-        audio.addEventListener('stalled', fallback, { once: true });
-        audio.load();
+        if (audio.src && !audio.paused) {
+            this._fadeOut(audio, 250, doSwitch);
+        } else {
+            audio.volume = 0;
+            doSwitch();
+        }
     },
 
-    // Stop everything and clear state. Use for title returns / game resets.
+    // Stop everything. Use for title returns / game resets.
     stopMusic(fadeMs) {
-        this._cancelPendingLoad();
         this._stopFadeIn();
-        if (this._currentMusic) {
-            if (fadeMs && fadeMs > 0) {
-                this._fadeOutAndRelease(this._currentMusic, fadeMs);
-            } else {
-                try { this._currentMusic.pause(); this._currentMusic.src = ''; } catch (e) {}
-            }
-            this._currentMusic = null;
-        }
+        this._stopFadeOut();
         this._stopProcedural();
+        const audio = this._audio;
+        if (audio && !audio.paused) {
+            if (fadeMs && fadeMs > 0) {
+                this._fadeOut(audio, fadeMs, () => { try { audio.pause(); } catch (e) {} });
+            } else {
+                try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+            }
+        }
         this._currentMusicId = null;
     },
 
-    _cancelPendingLoad() {
-        if (!this._pendingLoad) return;
-        try { this._pendingLoad.pause(); this._pendingLoad.src = ''; } catch (e) {}
-        this._pendingLoad = null;
+    _stopFadeIn() {
+        if (this._fadeInTimer) {
+            clearInterval(this._fadeInTimer);
+            this._fadeInTimer = null;
+        }
     },
 
-    _stopFadeIn() {
-        if (this._fadeInterval) {
-            clearInterval(this._fadeInterval);
-            this._fadeInterval = null;
+    _stopFadeOut() {
+        if (this._fadeOutTimer) {
+            clearInterval(this._fadeOutTimer);
+            this._fadeOutTimer = null;
         }
     },
 
@@ -168,40 +173,29 @@ const Audio = {
 
     _fadeIn(audio, ms) {
         this._stopFadeIn();
-        audio.volume = 0;
-        audio.play().catch(() => {});
+        const target = this.musicVolume;
         const step = 30;
-        const inc = this.musicVolume / Math.max(1, ms / step);
-        this._fadeInterval = setInterval(() => {
-            // Guard: audio could have been replaced while fading in
-            if (this._currentMusic !== audio) {
-                clearInterval(this._fadeInterval);
-                this._fadeInterval = null;
-                return;
-            }
-            const v = Math.min(this.musicVolume, audio.volume + inc);
+        const inc = target / Math.max(1, ms / step);
+        this._fadeInTimer = setInterval(() => {
+            if (this._audio !== audio) { this._stopFadeIn(); return; }
+            const v = Math.min(target, audio.volume + inc);
             audio.volume = v;
-            if (v >= this.musicVolume - 0.001) {
-                clearInterval(this._fadeInterval);
-                this._fadeInterval = null;
-            }
+            if (v >= target - 0.001) this._stopFadeIn();
         }, step);
     },
 
-    _fadeOutAndRelease(audio, ms) {
-        // Captured in closure — immune to later _currentMusic reassignment.
+    _fadeOut(audio, ms, done) {
+        this._stopFadeOut();
+        const startV = audio.volume;
+        if (startV <= 0) { if (done) done(); return; }
         const step = 30;
-        const dec = Math.max(0.001, audio.volume / Math.max(1, ms / step));
-        const int = setInterval(() => {
+        const dec = Math.max(0.001, startV / Math.max(1, ms / step));
+        this._fadeOutTimer = setInterval(() => {
             const v = audio.volume - dec;
             if (v <= 0.001) {
-                try {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.src = '';         // release media so iOS doesn't keep decoding
-                    audio.load();
-                } catch (e) {}
-                clearInterval(int);
+                audio.volume = 0;
+                this._stopFadeOut();
+                if (done) done();
                 return;
             }
             audio.volume = v;
