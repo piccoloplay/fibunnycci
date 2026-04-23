@@ -1046,9 +1046,9 @@ const Combat = {
         ctx.ellipse(w / 2, h * 0.6, w * 0.25, 18, 0, 0, Math.PI * 2);
         ctx.stroke();
 
-        // HP Bars (show in most phases)
+        // HP Bars (compact, above creatures) — hide during morra to avoid clutter
         if (this.phase !== 'morra_choice') {
-            this._renderHPBars(ctx, w);
+            this._renderHPBars(ctx, w, h);
         }
 
         // Draw creatures — HD sizes
@@ -1103,6 +1103,8 @@ const Combat = {
         UI.textOutline(ctx, `${this.playerMorraWins}`, w / 2 - 50, 28, { color: '#60b0ff', size: 20, bold: true, align: 'center' });
         UI.textOutline(ctx, `Turno ${this.currentTurn}/5`, w / 2, 28, { color: '#fff', size: 16, bold: true, align: 'center' });
         UI.textOutline(ctx, `${this.cpuMorraWins}`, w / 2 + 50, 28, { color: '#ff6080', size: 20, bold: true, align: 'center' });
+
+        ctx.restore(); // End camera-zoom wrapper
     },
 
     _renderStageDetails(ctx, w, h, stage, t) {
@@ -1250,35 +1252,44 @@ const Combat = {
         ctx.beginPath(); ctx.arc(x + 10 * s, y + 2 * s, 14 * s, 0, Math.PI * 2); ctx.fill();
     },
 
-    _renderHPBars(ctx, w) {
-        const barW = w * 0.42;
-        const barH = 28;
-        const y = 60;
-
+    _renderHPBars(ctx, w, h) {
         if (!this.playerCreature || !this.cpuCreature) return;
+        // Compact HP bars above each creature (solidali con il mostro).
+        const playerX = w * 0.25;
+        const cpuX = w * 0.75;
+        const creatureY = h * 0.42;
+        const barW = 130;
+        const barH = 12;
+        const offsetY = 84; // how far above the creature center
 
-        // Player HP (left)
-        const pRatio = this.playerCreature.currentHp / this.playerCreature.maxHp;
-        UI.textOutline(ctx, this.playerCreature.creatureName, 14, y - 8, {
-            color: '#fff', size: 20, bold: true
-        });
-        UI.drawHPBar(ctx, 14, y, barW, barH, pRatio);
-        UI.textOutline(ctx, `${this.playerCreature.currentHp}/${this.playerCreature.maxHp}`, 14, y + barH + 18, {
-            color: '#ddd', size: 16, bold: true
-        });
+        // Player
+        this._drawMiniHPBar(ctx, playerX, creatureY - offsetY, barW, barH, this.playerCreature);
+        // CPU
+        this._drawMiniHPBar(ctx, cpuX, creatureY - offsetY, barW, barH, this.cpuCreature);
+    },
 
-        // CPU HP (right)
-        const cRatio = this.cpuCreature.currentHp / this.cpuCreature.maxHp;
-        const cx = w - 10 - barW;
-        UI.textOutline(ctx, this.cpuCreature.creatureName, w - 14, y - 8, {
-            color: '#fff', size: 20, bold: true, align: 'right'
+    _drawMiniHPBar(ctx, cx, y, barW, barH, creature) {
+        const x = cx - barW / 2;
+        const ratio = Math.max(0, Math.min(1, creature.currentHp / creature.maxHp));
+        // Name
+        UI.textOutline(ctx, creature.creatureName, cx, y - 8, {
+            color: '#fff', size: 15, bold: true, align: 'center'
         });
-        UI.drawHPBar(ctx, cx, y, barW, barH, cRatio);
-        UI.textOutline(ctx, `${this.cpuCreature.currentHp}/${this.cpuCreature.maxHp}`, w - 14, y + barH + 18, {
-            color: '#ddd', size: 16, bold: true, align: 'right'
+        // Bar (reuse UI.drawHPBar if available, else fallback)
+        if (UI.drawHPBar) {
+            UI.drawHPBar(ctx, x, y, barW, barH, ratio);
+        } else {
+            ctx.fillStyle = '#222';
+            UI.roundRect(ctx, x, y, barW, barH, 4);
+            ctx.fill();
+            ctx.fillStyle = ratio > 0.5 ? '#44dd66' : ratio > 0.25 ? '#ffaa33' : '#dd3333';
+            UI.roundRect(ctx, x, y, barW * ratio, barH, 4);
+            ctx.fill();
+        }
+        // HP number
+        UI.textOutline(ctx, `${creature.currentHp}/${creature.maxHp}`, cx, y + barH + 12, {
+            color: '#eee', size: 12, bold: true, align: 'center'
         });
-
-        ctx.restore(); // End camera-zoom wrapper
     },
 
     // ─── RENDER: TAP TO PLAY ───

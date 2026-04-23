@@ -513,9 +513,11 @@ const Touch = {
 
         switch (item.id) {
             case 'home':
+                // Go back to the title screen (new-game / continue menu)
                 Game._syncGameState();
-                if (typeof WorldMap !== 'undefined' && WorldMap.open) WorldMap.open();
-                Game.state = 'worldmap';
+                Game.state = 'title';
+                if (typeof TitleScreen !== 'undefined' && TitleScreen.init) TitleScreen.init();
+                Audio.playMusic('title');
                 break;
             case 'team':
                 TeamBuilder.open();
