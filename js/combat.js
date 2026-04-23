@@ -52,7 +52,6 @@ const Combat = {
     _turnCounterAlpha: 0,
     _turnCounterPhases: {
         tap_to_play: true,
-        action_select: true,
         between_turns: true,
         round_end: true,
         match_end: true
