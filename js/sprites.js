@@ -282,6 +282,22 @@ const Sprites = {
         this.loadTileImages();
         this.loadPlayerSprites();
         this.loadNpcSprites();
+        this.loadCreatureVariants();
+    },
+
+    CREATURE_VARIANTS: {
+        coniglio: ['metallo', 'fuoco', 'acqua', 'terra', 'legno']
+    },
+    loadCreatureVariants() {
+        for (const [id, els] of Object.entries(this.CREATURE_VARIANTS)) {
+            for (const el of els) {
+                const key = `creature_${id}_${el}`;
+                const img = new Image();
+                img.onload = () => { this._cache[key] = img; };
+                img.onerror = () => { /* leave procedural fallback */ };
+                img.src = `assets/sprites/creatures/${key}.png`;
+            }
+        }
     },
 
     NPC_NAMES: ['student', 'mei', 'nonno', 'kebabbaro', 'poliziotto', 'turista'],

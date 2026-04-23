@@ -207,9 +207,17 @@ const Creatures = {
         const s = size || 30;
         const bob = anim === 'idle' ? Math.floor(Math.sin((animTimer || 0) * 0.003) * 2) : 0;
 
-        // 16-bit pixel sprite path (preferred)
-        if (typeof Sprites !== 'undefined' && Sprites._cache && Sprites._cache['creature_' + creature.id]) {
-            const sprite = Sprites._cache['creature_' + creature.id];
+        // PNG sprite path (preferred). Try element-specific variant first
+        // (creature_<id>_<element>), then the generic procedural-bitmap key
+        // (creature_<id>), then fall through to procedural.
+        let spriteKey = null;
+        if (typeof Sprites !== 'undefined' && Sprites._cache) {
+            const variantKey = creature.element ? `creature_${creature.id}_${creature.element}` : null;
+            if (variantKey && Sprites._cache[variantKey]) spriteKey = variantKey;
+            else if (Sprites._cache['creature_' + creature.id]) spriteKey = 'creature_' + creature.id;
+        }
+        if (spriteKey) {
+            const sprite = Sprites._cache[spriteKey];
             const scale = Math.max(1, Math.round((s * 2) / sprite.width));
             const pw = sprite.width * scale;
             const ph = sprite.height * scale;
@@ -228,7 +236,7 @@ const Creatures = {
             } else if (anim === 'lose') {
                 shiftX = -Math.floor(Math.abs(Math.sin((animTimer || 0) * 0.02)) * 4);
             }
-            Sprites.draw(ctx, 'creature_' + creature.id, drawX + shiftX, drawY, scale);
+            Sprites.draw(ctx, spriteKey, drawX + shiftX, drawY, scale);
 
             // Element badge
             if (creature.element && this.ELEMENTS[creature.element]) {
