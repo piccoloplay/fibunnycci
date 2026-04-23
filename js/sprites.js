@@ -53,8 +53,53 @@ const Sprites = {
         }
     },
 
+    // ─── PRELOADED PNG TILE TEXTURES ───
+    // Map tile ID (see map.js TILES) → relative path of a ground-tile PNG.
+    // Any tile ID not listed falls back to the procedural drawTile() below.
+    TILE_IMAGES: {
+        0:  'assets/tiles/traditional/grass.png',
+        1:  'assets/tiles/traditional/dirt.png',
+        2:  'assets/tiles/traditional/deep_water.png',
+        3:  'assets/tiles/traditional/tree.png',
+        4:  'assets/tiles/traditional/stone_wall.png',
+        6:  'assets/tiles/traditional/tall_grass.png',
+        7:  'assets/tiles/traditional/sand.png',
+        8:  'assets/tiles/traditional/kawara_roof.png',
+        10: 'assets/tiles/urban/pavement.png',
+        11: 'assets/tiles/traditional/kawara_roof.png',
+        13: 'assets/tiles/urban/rail.png',
+        15: 'assets/tiles/traditional/planks.png',
+        17: 'assets/tiles/traditional/flower_field.png',
+        18: 'assets/tiles/traditional/fence.png',
+        19: 'assets/tiles/urban/pavement.png'
+    },
+    _tileImgCache: {},       // HTMLImageElement per tileId, null while loading, undefined if no entry
+
+    loadTileImages() {
+        for (const [id, path] of Object.entries(this.TILE_IMAGES)) {
+            if (this._tileImgCache[id]) continue;
+            const img = new Image();
+            img.onload = () => { this._tileImgCache[id] = img; };
+            img.onerror = () => { this._tileImgCache[id] = null; };
+            img.src = path;
+            this._tileImgCache[id] = null; // "loading" marker
+        }
+    },
+
+    drawTileImage(ctx, tileId, x, y, ts) {
+        const img = this._tileImgCache[tileId];
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, Math.round(x), Math.round(y), ts, ts);
+            return true;
+        }
+        return false;
+    },
+
     // ─── PROCEDURAL TILE RENDER (uses fillRect grid for chunky pixels) ───
     drawTile(ctx, tileId, x, y, ts) {
+        // Preloaded PNG wins when available
+        if (this.drawTileImage(ctx, tileId, x, y, ts)) return;
+
         const p = ts / 16; // pixel size
         const F = (px, py, w, h, color) => {
             ctx.fillStyle = color;
@@ -234,6 +279,7 @@ const Sprites = {
         this._buildNpc();
         this._buildCreatures();
         this._buildHands();
+        this.loadTileImages();
     },
 
     // Morra hands: fist (sasso), open palm (carta), scissors (forbice) — 16×16 left-facing.
