@@ -393,7 +393,11 @@ const Touch = {
 
         open.push({ x: sx, y: sy, g: 0, f: heuristic(sx, sy) });
 
-        const dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+        // 4-connected pathfinding only. Diagonal paths were stalling at
+        // runtime whenever a corner or a cardinal neighbour was blocked,
+        // which is the "diagonale sbagliata" feel. Keyboard 8-way input
+        // is unaffected — this only shapes tap-generated paths.
+        const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
         let iterations = 0;
 
         while (open.length > 0 && iterations < 500) {
