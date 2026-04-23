@@ -401,6 +401,8 @@ const Combat = {
     },
 
     // ─── PHASE: MORRA CHOICE ───
+    MORRA_TIME_LIMIT: 4000, // ms before auto-random pick
+
     _updateMorraChoice() {
         if (Input.wasPressed('left')) {
             this.selectIndex = Math.max(0, this.selectIndex - 1);
@@ -413,7 +415,15 @@ const Combat = {
 
         if (this._selectFlash > 0) this._selectFlash -= 16;
 
-        if (Input.wasPressed('confirm') && this.selectIndex >= 0) {
+        // Auto-pick random if the timer runs out
+        const timedOut = this.phaseTimer >= this.MORRA_TIME_LIMIT;
+        const forceConfirm = timedOut && this.selectIndex < 0;
+        if (forceConfirm) {
+            this.selectIndex = Math.floor(Math.random() * 3);
+            Audio.play('select');
+        }
+
+        if ((Input.wasPressed('confirm') || forceConfirm) && this.selectIndex >= 0) {
             Audio.play('confirm');
             this._vibrate(80);
             this.screenFlash = 150;
@@ -1739,7 +1749,59 @@ const Combat = {
     },
 
     // ─── RENDER: MORRA BUTTONS ───
+    // Circular countdown: arc depletes from full to empty; colour shifts
+    // green → yellow → red; centred under the creatures above the morra buttons.
+    _renderMorraTimer(ctx, w, h) {
+        const limit = this.MORRA_TIME_LIMIT || 4000;
+        const remaining = Math.max(0, limit - this.phaseTimer);
+        const ratio = remaining / limit;
+        const cx = w / 2;
+        const cy = Math.round(h * 0.52);
+        const r = 38;
+
+        // Background ring
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Filled arc
+        const color = ratio > 0.66 ? '#44dd66' : ratio > 0.33 ? '#ffcc44' : '#ff4444';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+
+        // Seconds left (rounded up)
+        const secs = Math.max(1, Math.ceil(remaining / 1000));
+        UI.textOutline(ctx, String(secs), cx, cy + 10, {
+            color: '#fff', size: 28, bold: true, align: 'center'
+        });
+
+        // Pulsing warning halo when < 1s
+        if (ratio < 0.25) {
+            const pulse = 0.5 + Math.sin(this.phaseTimer * 0.02) * 0.5;
+            ctx.strokeStyle = `rgba(255,80,80,${0.4 * pulse})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r + 8 + pulse * 4, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    },
+
     _renderMorraButtons(ctx, w, h) {
+        // Circular countdown timer at top of morra-choice area
+        this._renderMorraTimer(ctx, w, h);
+
         const btnSize = 160;
         const gap = 20;
         const totalW = btnSize * 3 + gap * 2;
@@ -2020,10 +2082,13 @@ const Combat = {
 
         ctx.textAlign = 'left';
 
-        // Morra hands bouncing on each beat (both still fists during countdown)
-        this._renderMorraHands(ctx, w, h, 'sasso', 'sasso', {
-            slideIn: Math.min(1, t / 200),
-            bounce: Math.sin((phaseInCount / beatLen) * Math.PI) * 14
+        // Single big central hand — fist bouncing on each beat
+        const phaseBeat = (this.phaseTimer % 300) / 300;
+        const handBounce = Math.sin(phaseBeat * Math.PI) * 28;
+        this._renderBigMorraHand(ctx, w, h, 'sasso', {
+            slideIn: Math.min(1, t / 250),
+            bounceY: handBounce,
+            snap: false
         });
     },
 
@@ -2157,58 +2222,57 @@ const Combat = {
 
         ctx.textAlign = 'left';
 
-        // Morra hands snap into their chosen shape + clash
+        // Single big central hand snaps into the player's chosen shape.
         const revealT = this.phaseTimer;
-        const clash = Math.max(0, Math.min(1, revealT / 150)); // 0→1 in first 150ms
+        const snapProgress = Math.max(0, Math.min(1, revealT / 200));
         const pShape = ['carta', 'sasso', 'forbice'][this.playerChoice] || 'sasso';
-        const cShape = ['carta', 'sasso', 'forbice'][this.cpuChoice] || 'sasso';
-        this._renderMorraHands(ctx, w, h, pShape, cShape, {
+        this._renderBigMorraHand(ctx, w, h, pShape, {
             slideIn: 1,
-            clashIn: clash,
-            snap: true
+            bounceY: 0,
+            snap: true,
+            snapProgress
         });
     },
 
-    // Renders both morra hands on either side of the arena. Shared by countdown and reveal.
-    // opts: { slideIn 0..1 (entry from edges), bounce px (countdown pulse), clashIn 0..1 (slide toward centre), snap bool }
-    _renderMorraHands(ctx, w, h, pShape, cShape, opts) {
+    // ONE big centered hand for the morra sequence. Shape = 'sasso' | 'carta' | 'forbice'.
+    // opts: { slideIn 0..1 (scale/fade entry), bounceY px (per-beat pulse),
+    //         snap bool (reveal pop + flash), snapProgress 0..1 }
+    _renderBigMorraHand(ctx, w, h, shape, opts) {
         opts = opts || {};
-        const scale = 4;                     // 16x16 → 64px hands
-        const handPx = 16 * scale;
-        const handY = Math.round(h * 0.48);
         const slide = opts.slideIn === undefined ? 1 : opts.slideIn;
-        const bounce = opts.bounce || 0;
-        const clash = opts.clashIn || 0;
+        const bounce = opts.bounceY || 0;
+        const scale = 10;              // 16px * 10 = 160px visible hand
+        const handPx = 16 * scale;
+        const cx = Math.round(w / 2 - handPx / 2);
+        const cy = Math.round(h * 0.46 - handPx / 2 - bounce);
 
-        // Resting positions (after slide-in)
-        const pRestX = w * 0.22 - handPx / 2;
-        const cRestX = w * 0.78 - handPx / 2;
-        // Off-screen start positions
-        const pStartX = -handPx - 20;
-        const cStartX = w + 20;
+        // Snap pop — grows from 0.6 to 1.1 and settles to 1.0
+        let popScale = 1;
+        if (opts.snap) {
+            const p = opts.snapProgress || 0;
+            popScale = p < 0.6 ? 0.6 + (p / 0.6) * 0.5 : 1.1 - ((p - 0.6) / 0.4) * 0.1;
+        }
+        const effScale = scale * slide * popScale;
+        const effPx = 16 * effScale;
+        const dx = Math.round(w / 2 - effPx / 2);
+        const dy = Math.round(h * 0.46 - effPx / 2 - bounce);
 
-        // Clash pulls hands slightly toward centre during reveal
-        const clashShift = clash * 24;
-        const px = Math.round(pStartX + (pRestX - pStartX) * slide + clashShift);
-        const cx = Math.round(cStartX + (cRestX - cStartX) * slide - clashShift);
-        const py = Math.round(handY - bounce);
+        // Ground shadow ellipse
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(w / 2, h * 0.46 + effPx / 2 + 12, effPx * 0.35, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Shadow pixels beneath
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(px + handPx * 0.15, handY + handPx + 6, handPx * 0.7, 6);
-        ctx.fillRect(cx + handPx * 0.15, handY + handPx + 6, handPx * 0.7, 6);
-
-        Sprites.drawHand(ctx, px, py, pShape, scale, 'player');
-        Sprites.drawHand(ctx, cx, py, cShape, scale, 'cpu');
-
-        // Tiny clash flash at the centre on snap
-        if (opts.snap && clash > 0.6 && clash < 0.95) {
-            const flashR = 30 + (1 - clash) * 40;
-            ctx.fillStyle = `rgba(255,230,120,${(clash - 0.6) * 2.2})`;
+        // Yellow "snap" flash at reveal (drawn behind the hand)
+        if (opts.snap && (opts.snapProgress || 0) < 0.5) {
+            const flashAlpha = Math.max(0, 1 - (opts.snapProgress || 0) * 2);
+            ctx.fillStyle = `rgba(255,230,120,${flashAlpha * 0.6})`;
             ctx.beginPath();
-            ctx.arc(w / 2, handY + handPx / 2, flashR, 0, Math.PI * 2);
+            ctx.arc(w / 2, h * 0.46, effPx * 0.6, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        Sprites.drawHand(ctx, dx, dy, shape, effScale, 'player');
     },
 
     // ─── RENDER: EPIC RESOLVE ───
