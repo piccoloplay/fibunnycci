@@ -10,7 +10,7 @@ const Touch = {
     // movement granular — you tap multiple times instead of sending the
     // player on a long auto-walk. Tapping an NPC ignores this and uses
     // the full path so a single tap gets you to the conversation.
-    MAX_STEPS_PER_TAP: 3,
+    MAX_STEPS_PER_TAP: 2,
 
     // Tap state
     lastTapTime: 0,
