@@ -210,7 +210,11 @@ const Combat = {
         this._dimensionAlpha += (dimTarget - this._dimensionAlpha) * Math.min(1, dt * 0.006);
 
         // Camera zoom: ease toward phase target, with a small punch boost from shake
-        const baseZoom = this._phaseZoomTargets[this.phase] ?? 1.0;
+        let baseZoom = this._phaseZoomTargets[this.phase] ?? 1.0;
+        // Gentle zoom breath while waiting for the player to tap
+        if (this.phase === 'tap_to_play') {
+            baseZoom += Math.sin(this.animTimer * 0.0008) * 0.022;
+        }
         const punchBoost = Math.min(0.12, this.screenShake * 0.006);
         this.cameraZoomTarget = baseZoom + punchBoost;
         this.cameraZoom += (this.cameraZoomTarget - this.cameraZoom) * Math.min(1, dt * 0.012);
@@ -332,6 +336,7 @@ const Combat = {
             this.screenFlashColor = '#ff8844';
             this.screenShake = 6;
             Audio.play('powerUp');
+            Audio.playMusic('combat_mystical');
             this.floatingTexts.push({
                 text: `-${cost} HP`, x: this._w * 0.25, y: this._h * 0.35,
                 color: '#ff8844', size: 22, life: 0, maxLife: 1200, vy: -1.2
@@ -426,12 +431,12 @@ const Combat = {
     // ─── PHASE: COUNTDOWN (3-2-1) ───
     _countdownBeat: 0,
     _updateCountdown(dt) {
-        const beat = this.phaseTimer < 400 ? 0 : this.phaseTimer < 800 ? 1 : 2;
+        const beat = this.phaseTimer < 300 ? 0 : this.phaseTimer < 600 ? 1 : 2;
         if (beat > this._countdownBeat) {
             this._countdownBeat = beat;
             Audio.play(beat < 2 ? 'countdown' : 'countdownGo');
         }
-        if (this.phaseTimer > 1200) {
+        if (this.phaseTimer > 900) {
             this._countdownBeat = 0;
             // Trigger attack anims
             const pAnims = ['carta', 'sasso', 'forbice'];
@@ -447,10 +452,10 @@ const Combat = {
     // ─── PHASE: REVEAL (flip cards) ───
     _updateReveal(dt) {
         // Card flip sound
-        if (this.phaseTimer > 250 && this.phaseTimer < 300) Audio.play('reveal');
+        if (this.phaseTimer > 150 && this.phaseTimer < 200) Audio.play('reveal');
 
-        // At 600ms: cards fully revealed, resolve
-        if (this.phaseTimer > 800) {
+        // At ~450ms: cards + hands fully revealed, resolve
+        if (this.phaseTimer > 450) {
             this._resolveMorra();
 
             // Audio + haptic feedback
@@ -734,6 +739,7 @@ const Combat = {
             damage *= this.playerNextAttackBuff;
             this.playerNextAttackBuff = 1.0;
             Audio.play('dimensionExit');
+            Audio.playMusic('combat');
         }
 
         // Step 5: Crit
@@ -852,8 +858,16 @@ const Combat = {
             shakeY = (Math.random() - 0.5) * this.screenShake;
         }
 
+        // Idle camera pan during tap_to_play — keeps the scene alive while waiting
+        let idleX = 0, idleY = 0;
+        if (this.phase === 'tap_to_play') {
+            const tSec = this.animTimer * 0.001;
+            idleX = Math.sin(tSec * 0.6) * 10;
+            idleY = Math.cos(tSec * 0.45) * 6;
+        }
+
         ctx.save();
-        ctx.translate(shakeX, shakeY);
+        ctx.translate(shakeX + idleX, shakeY + idleY);
 
         switch (this.phase) {
             case 'unit_select': this._renderUnitSelect(ctx, w, h); break;
@@ -1963,10 +1977,11 @@ const Combat = {
         ctx.fillRect(0, 0, w, h);
 
         const t = this.phaseTimer;
-        let num = t < 400 ? '3' : t < 800 ? '2' : '1';
-        const phaseInCount = t % 400;
-        const scale = 1.5 - (phaseInCount / 400) * 0.5; // Start big, shrink
-        const alpha = 1 - (phaseInCount / 400) * 0.3;
+        const beatLen = 300; // must match _updateCountdown (900ms / 3)
+        let num = t < beatLen ? '3' : t < beatLen * 2 ? '2' : '1';
+        const phaseInCount = t % beatLen;
+        const scale = 1.5 - (phaseInCount / beatLen) * 0.5;
+        const alpha = 1 - (phaseInCount / beatLen) * 0.3;
 
         ctx.save();
         ctx.translate(w / 2, h * 0.4);
@@ -1979,13 +1994,12 @@ const Combat = {
         ctx.restore();
         ctx.globalAlpha = 1;
 
-        // Two card backs sliding in
-        const slideProgress = Math.min(1, t / 800);
+        // Two card backs sliding in (kept alongside the hands)
+        const slideProgress = Math.min(1, t / 600);
         const cardW = 120;
         const cardH = 160;
         const cardY = h * 0.62;
 
-        // Player card from left
         const pCardX = -cardW + slideProgress * (w * 0.3);
         ctx.fillStyle = '#2244aa';
         this._roundRect(ctx, pCardX, cardY, cardW, cardH, 8);
@@ -1995,7 +2009,6 @@ const Combat = {
         ctx.font = '24px Nunito, sans-serif'; ctx.textAlign = 'center';
         ctx.fillText('?', pCardX + cardW / 2, cardY + cardH / 2 + 8);
 
-        // CPU card from right
         const cX = w - pCardX - cardW;
         ctx.fillStyle = '#aa2244';
         this._roundRect(ctx, cX, cardY, cardW, cardH, 8);
@@ -2006,6 +2019,12 @@ const Combat = {
         ctx.fillText('?', cX + cardW / 2, cardY + cardH / 2 + 8);
 
         ctx.textAlign = 'left';
+
+        // Morra hands bouncing on each beat (both still fists during countdown)
+        this._renderMorraHands(ctx, w, h, 'sasso', 'sasso', {
+            slideIn: Math.min(1, t / 200),
+            bounce: Math.sin((phaseInCount / beatLen) * Math.PI) * 14
+        });
     },
 
     // ─── RENDER: EPIC REVEAL ───
@@ -2137,6 +2156,59 @@ const Combat = {
         }
 
         ctx.textAlign = 'left';
+
+        // Morra hands snap into their chosen shape + clash
+        const revealT = this.phaseTimer;
+        const clash = Math.max(0, Math.min(1, revealT / 150)); // 0→1 in first 150ms
+        const pShape = ['carta', 'sasso', 'forbice'][this.playerChoice] || 'sasso';
+        const cShape = ['carta', 'sasso', 'forbice'][this.cpuChoice] || 'sasso';
+        this._renderMorraHands(ctx, w, h, pShape, cShape, {
+            slideIn: 1,
+            clashIn: clash,
+            snap: true
+        });
+    },
+
+    // Renders both morra hands on either side of the arena. Shared by countdown and reveal.
+    // opts: { slideIn 0..1 (entry from edges), bounce px (countdown pulse), clashIn 0..1 (slide toward centre), snap bool }
+    _renderMorraHands(ctx, w, h, pShape, cShape, opts) {
+        opts = opts || {};
+        const scale = 4;                     // 16x16 → 64px hands
+        const handPx = 16 * scale;
+        const handY = Math.round(h * 0.48);
+        const slide = opts.slideIn === undefined ? 1 : opts.slideIn;
+        const bounce = opts.bounce || 0;
+        const clash = opts.clashIn || 0;
+
+        // Resting positions (after slide-in)
+        const pRestX = w * 0.22 - handPx / 2;
+        const cRestX = w * 0.78 - handPx / 2;
+        // Off-screen start positions
+        const pStartX = -handPx - 20;
+        const cStartX = w + 20;
+
+        // Clash pulls hands slightly toward centre during reveal
+        const clashShift = clash * 24;
+        const px = Math.round(pStartX + (pRestX - pStartX) * slide + clashShift);
+        const cx = Math.round(cStartX + (cRestX - cStartX) * slide - clashShift);
+        const py = Math.round(handY - bounce);
+
+        // Shadow pixels beneath
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(px + handPx * 0.15, handY + handPx + 6, handPx * 0.7, 6);
+        ctx.fillRect(cx + handPx * 0.15, handY + handPx + 6, handPx * 0.7, 6);
+
+        Sprites.drawHand(ctx, px, py, pShape, scale, 'player');
+        Sprites.drawHand(ctx, cx, py, cShape, scale, 'cpu');
+
+        // Tiny clash flash at the centre on snap
+        if (opts.snap && clash > 0.6 && clash < 0.95) {
+            const flashR = 30 + (1 - clash) * 40;
+            ctx.fillStyle = `rgba(255,230,120,${(clash - 0.6) * 2.2})`;
+            ctx.beginPath();
+            ctx.arc(w / 2, handY + handPx / 2, flashR, 0, Math.PI * 2);
+            ctx.fill();
+        }
     },
 
     // ─── RENDER: EPIC RESOLVE ───

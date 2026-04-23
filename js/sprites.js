@@ -233,6 +233,87 @@ const Sprites = {
         this._buildPlayer();
         this._buildNpc();
         this._buildCreatures();
+        this._buildHands();
+    },
+
+    // Morra hands: fist (sasso), open palm (carta), scissors (forbice) — 16×16 left-facing.
+    // Right-facing variant drawn by flipping at draw time.
+    _buildHands() {
+        const hPal = {
+            '0': '#1a1514',   // outline
+            '1': '#2a1a14',   // shadow
+            '2': '#d6a078',   // skin mid
+            '3': '#f0caa0',   // skin light
+            '4': '#a07040'    // sleeve brown
+        };
+
+        // Fist (sasso) — knuckles facing right
+        this.build('hand_fist', [
+            '................',
+            '.....000........',
+            '....033330......',
+            '...03322330.....',
+            '..0332223330....',
+            '..032222223300..',
+            '..032222222230..',
+            '..032222222230..',
+            '..032222222230..',
+            '..032222222230..',
+            '..0322222233440.',
+            '..0332222234440.',
+            '...0333333244440',
+            '....044444444440',
+            '.....000000000..',
+            '................'
+        ], hPal);
+
+        // Open palm (carta) — fingers up, facing right
+        this.build('hand_paper', [
+            '......000000....',
+            '.....033223300..',
+            '....03322233230.',
+            '....03232332320.',
+            '....03232323230.',
+            '....03223332330.',
+            '...0333223322330',
+            '..033322222223230',
+            '..0322222222333.',
+            '..03222222223230',
+            '..03222222223230',
+            '..03222222233440',
+            '..03333333334440',
+            '..04444444444400',
+            '...0000000000...',
+            '................'
+        ], hPal);
+
+        // Scissors (forbice) — index + middle up, facing right
+        this.build('hand_scissors', [
+            '....000.........',
+            '...03330........',
+            '..0323230.......',
+            '..0323230...000.',
+            '..0323230..03230',
+            '..0323230..03230',
+            '..0323230..03230',
+            '..0323230..03230',
+            '..0333330..03230',
+            '..0322233..03230',
+            '..0322223300330.',
+            '..03222222223300',
+            '..03333333233440',
+            '...044444444440.',
+            '....00000000000.',
+            '................'
+        ], hPal);
+    },
+
+    // Draw a hand. side: 'player' (left, faces right) or 'cpu' (right, faces left = flipped).
+    drawHand(ctx, x, y, shape, scale, side) {
+        const keyMap = { 'carta': 'hand_paper', 'sasso': 'hand_fist', 'forbice': 'hand_scissors' };
+        const key = keyMap[shape] || 'hand_fist';
+        const flip = (side === 'cpu');
+        this.draw(ctx, key, x, y, scale, flip);
     },
 
     // Player bunny 16×16 — 4 directions × 2 walk frames.

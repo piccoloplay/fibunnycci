@@ -20,6 +20,7 @@ const Audio = {
         tempio:     { src: 'assets/audio/tempio.ogg',      procedural: 'overworld_mystic' },
         citta:      { src: 'assets/audio/citta.ogg',       procedural: 'overworld_urban' },
         combat:     { src: 'assets/audio/combat.ogg',      procedural: 'combat' },
+        combat_mystical: { src: 'assets/audio/mystical.ogg', procedural: 'combat_mystical' },
         victory:    { src: 'assets/audio/victory.ogg',     procedural: 'victory_fanfare' },
         defeat:     { src: 'assets/audio/defeat.ogg',      procedural: 'defeat_theme' }
     },
@@ -216,6 +217,16 @@ const Audio = {
                     melody: [E4,E4,0,G4, A4,0,G4,0, E4,0,D4,E4, 0,0,G4,0, A4,A4,0,C5, B4,0,A4,0, G4,0,E4,D4, 0,0,0,0],
                     bass:   [A3,0,A3,0, C3,0,C3,0, D3,0,D3,0, E3,0,E3,0, A3,0,A3,0, F3,0,F3,0, G3,0,G3,0, E3,0,E3,0]
                 };
+            case 'combat_mystical': {
+                // Slow pentatonic "entering the dimension" track — drone bass + haunting triangle melody.
+                // Df=C#, Af=G#. Uses hirajoshi-ish scale for the Asian flavour.
+                const Df4 = 277, Af4 = 415, Af3 = 208;
+                return {
+                    bpm: 95, wave: 'triangle',
+                    melody: [C5,0,0,Df4, 0,F4,0,0, G4,0,Af4,0, 0,G4,0,F4, Df4,0,0,C4, 0,0,F4,0, Af4,0,G4,0, F4,0,0,0],
+                    bass:   [F3,0,0,0, 0,0,0,0, Af3,0,0,0, 0,0,0,0, C4,0,0,0, 0,0,0,0, Af3,0,0,0, 0,0,0,0]
+                };
+            }
             case 'victory_fanfare':
                 return {
                     bpm: 140, wave: 'square',
