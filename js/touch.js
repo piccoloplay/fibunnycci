@@ -6,6 +6,11 @@ const Touch = {
     tapTarget: null,
     path: [],
     pathIndex: 0,
+    // Max tiles the player walks per single tap on an empty tile. Keeps
+    // movement granular — you tap multiple times instead of sending the
+    // player on a long auto-walk. Tapping an NPC ignores this and uses
+    // the full path so a single tap gets you to the conversation.
+    MAX_STEPS_PER_TAP: 3,
 
     // Tap state
     lastTapTime: 0,
@@ -261,9 +266,14 @@ const Touch = {
             }
         }
 
-        // Walkable tile
+        // Walkable tile — plan a SHORT move (max 3 tiles) toward the tap
+        // target, even if the full path would be longer. This gives the
+        // player fine-grained control: a single tap moves a little, you
+        // stop automatically, tap again to keep going. Pathfinding still
+        // lets us route around obstacles for those 3 tiles.
         if (GameMap.isWalkable(gridX, gridY) && !NPC.getAt(gridX, gridY)) {
-            this.path = this._findPath(Player.gridX, Player.gridY, gridX, gridY);
+            const fullPath = this._findPath(Player.gridX, Player.gridY, gridX, gridY);
+            this.path = fullPath.slice(0, this.MAX_STEPS_PER_TAP);
             this.pathIndex = 0;
             this.tapTarget = { gridX, gridY };
         }
@@ -445,14 +455,10 @@ const Touch = {
         if (this.path.length > 0 && !Player.moving) {
             this._followPath();
         }
-
-        if (this._holding && Game.state === 'overworld') {
-            this._holdTimer += (Game.lastTime ? 16 : 16); // Approx 1 frame
-            if (this._holdTimer >= this._holdRepathInterval) {
-                this._holdTimer = 0;
-                this._handleOverworldTap({ x: this._holdX, y: this._holdY });
-            }
-        }
+        // Note: we deliberately do NOT re-path while the finger is held.
+        // One tap = one short move. To re-plan, lift and tap again. This
+        // prevents the "feels like two taps" issue where touchstart fired
+        // a path and 300ms later the hold timer fired another one.
     },
 
     _followPath() {
