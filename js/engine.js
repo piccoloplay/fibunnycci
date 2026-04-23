@@ -5,6 +5,7 @@ const Game = {
     state: 'title',
     _pendingTris: null,
     _pendingCombat: null,
+    _pendingVN: null,
     _currentAreaId: 'villaggio',
     _transitionTimer: 0,
     _transitionTarget: null, // {episode, x, y, areaId}
@@ -210,9 +211,20 @@ const Game = {
                         Tris.start(this._pendingTris, this.canvas.width, this.canvas.height);
                         this.state = 'tris';
                         this._pendingTris = null;
+                    } else if (this._pendingVN) {
+                        VN.start(this._pendingVN);
+                        this.state = 'vn';
+                        this._pendingVN = null;
                     } else {
                         this.state = 'overworld';
                     }
+                }
+                break;
+            case 'vn':
+                VN.update(dt);
+                if (!VN.active) {
+                    this.state = 'overworld';
+                    Audio.playMusic(this._currentAreaId);
                 }
                 break;
             case 'combat':
@@ -377,6 +389,8 @@ const Game = {
             this._pendingCombat = npc.triggerCombat;
         } else if (npc.triggerTris) {
             this._pendingTris = npc.triggerTris;
+        } else if (npc.triggerVN) {
+            this._pendingVN = npc.triggerVN;
         }
         NPC.advanceDialogue(npc);
     },
@@ -453,6 +467,10 @@ const Game = {
 
             case 'teambuilder':
                 TeamBuilder.render(ctx, w, h);
+                break;
+
+            case 'vn':
+                VN.render(ctx, w, h);
                 break;
 
             case 'transition':

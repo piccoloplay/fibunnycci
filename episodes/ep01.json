@@ -17,10 +17,10 @@
             "direction": "down",
             "color": "#d6a361",
             "dialogue": [[
-                "Benvenuto a Villaggio Sakura!",
-                "Oggi ho il durum allo zodiaco.",
-                "Ricorda: la matematica è forza suprema."
-            ]]
+                "Piccoloplay... vieni qui, giovane.",
+                "Ho qualcosa da dirti."
+            ]],
+            "triggerVN": "s01_kebab_collatz"
         },
         {
             "id": "mei",
