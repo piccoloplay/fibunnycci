@@ -26,8 +26,8 @@
             "id": "mei",
             "name": "Mei la Strateg",
             "sprite": "mei",
-            "x": 9,
-            "y": 9,
+            "x": 11,
+            "y": 5,
             "direction": "down",
             "color": "#ff7aa5",
             "dialogue": [[
@@ -40,8 +40,8 @@
             "id": "nonno",
             "name": "Nonno",
             "sprite": "nonno",
-            "x": 6,
-            "y": 4,
+            "x": 3,
+            "y": 2,
             "direction": "down",
             "color": "#8b6843",
             "dialogue": [[
@@ -54,8 +54,8 @@
             "id": "student",
             "name": "Kuro il Ribelle",
             "sprite": "student",
-            "x": 13,
-            "y": 10,
+            "x": 14,
+            "y": 18,
             "direction": "down",
             "color": "#2c4a8a",
             "dialogue": [[
@@ -73,8 +73,8 @@
             "id": "poliziotto_boss",
             "name": "Capitano Shiro",
             "sprite": "poliziotto",
-            "x": 8,
-            "y": 8,
+            "x": 10,
+            "y": 0,
             "direction": "down",
             "color": "#557733",
             "dialogue": [[
