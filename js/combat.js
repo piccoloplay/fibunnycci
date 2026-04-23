@@ -45,6 +45,19 @@ const Combat = {
     _elementSwapMs: 0,          // swirl + flash on player when element changes
     _elementSwapColor: '#fff',
 
+    // Mystical-dimension overlay (fades in while Potenziamento is armed)
+    _dimensionAlpha: 0,
+
+    // Turn counter fade (0 = hidden, 1 = visible)
+    _turnCounterAlpha: 0,
+    _turnCounterPhases: {
+        tap_to_play: true,
+        action_select: true,
+        between_turns: true,
+        round_end: true,
+        match_end: true
+    },
+
     // Timers & animation
     phaseTimer: 0,
     animTimer: 0,
@@ -166,6 +179,8 @@ const Combat = {
         this.playerNextAttackBuff = 1.0;
         this._powerUpAuraMs = 0;
         this._elementSwapMs = 0;
+        this._turnCounterAlpha = 0;
+        this._dimensionAlpha = 0;
     },
 
     // ─── UPDATE ───
@@ -185,6 +200,14 @@ const Combat = {
             if (this.screenShake < 0.5) this.screenShake = 0;
         }
         if (this._elementSwapMs > 0) this._elementSwapMs = Math.max(0, this._elementSwapMs - dt);
+
+        // Turn counter fade (show during idle/decision phases, hide during action)
+        const turnTarget = this._turnCounterPhases[this.phase] ? 1 : 0;
+        this._turnCounterAlpha += (turnTarget - this._turnCounterAlpha) * Math.min(1, dt * 0.012);
+
+        // Mystical dimension overlay: active while Potenziamento buff is armed
+        const dimTarget = (this.playerNextAttackBuff > 1) ? 1 : 0;
+        this._dimensionAlpha += (dimTarget - this._dimensionAlpha) * Math.min(1, dt * 0.006);
 
         // Camera zoom: ease toward phase target, with a small punch boost from shake
         const baseZoom = this._phaseZoomTargets[this.phase] ?? 1.0;
@@ -1051,6 +1074,11 @@ const Combat = {
         // ── STAGE DETAILS ──
         this._renderStageDetails(ctx, w, h, stage, t);
 
+        // ── MYSTICAL DIMENSION (overlay sky+ground when Potenziamento is armed) ──
+        if (this._dimensionAlpha > 0.01) {
+            this._renderMysticalDimension(ctx, w, h, this._dimensionAlpha);
+        }
+
         // ── ARENA CIRCLE (on ground) ──
         ctx.strokeStyle = 'rgba(255,255,255,0.12)';
         ctx.lineWidth = 2;
@@ -1127,6 +1155,10 @@ const Combat = {
     },
 
     _renderTurnCounter(ctx, w, h) {
+        if (this._turnCounterAlpha < 0.02) return;
+        ctx.save();
+        ctx.globalAlpha = this._turnCounterAlpha;
+
         const maxTurns = 5;
         const centerY = Math.round(h * 0.55);
 
@@ -1196,6 +1228,119 @@ const Combat = {
         UI.text(ctx, `${this.cpuMorraWins}`, panelX + panelW - 24, centerY + 26, {
             color: '#ff6080', size: 16, bold: true, align: 'center'
         });
+
+        ctx.restore();
+    },
+
+    // Mystical Asian dimension: dark purple/red sky, huge enso circle, floating kanji,
+    // radial light streaks, rising ki particles. Fades in while Potenziamento is armed.
+    _renderMysticalDimension(ctx, w, h, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const t = this.animTimer * 0.001;
+
+        // Sky replacement — deep violet → crimson
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+        skyGrad.addColorStop(0, '#120028');
+        skyGrad.addColorStop(0.5, '#48083a');
+        skyGrad.addColorStop(1, '#7a1030');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h * 0.6);
+
+        // Ground replacement — dark violet haze
+        const groundGrad = ctx.createLinearGradient(0, h * 0.58, 0, h);
+        groundGrad.addColorStop(0, '#2a0a44');
+        groundGrad.addColorStop(1, '#080218');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, h * 0.58, w, h * 0.42);
+
+        // Big enso (brush circle) — rotates slowly
+        ctx.save();
+        ctx.translate(w / 2, h * 0.32);
+        ctx.rotate(t * 0.25);
+        ctx.strokeStyle = 'rgba(255,200,100,0.55)';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const radius = Math.min(w, h) * 0.36;
+        ctx.arc(0, 0, radius, 0.22, Math.PI * 2 - 0.35);
+        ctx.stroke();
+        // Inner red halo
+        ctx.strokeStyle = 'rgba(255,80,120,0.35)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 26, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Radial light streaks from the center
+        ctx.save();
+        ctx.translate(w / 2, h * 0.32);
+        ctx.strokeStyle = 'rgba(255,230,180,0.14)';
+        ctx.lineWidth = 2;
+        const rayCount = 14;
+        for (let i = 0; i < rayCount; i++) {
+            const a = i * (Math.PI * 2 / rayCount) + t * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * 60, Math.sin(a) * 60);
+            ctx.lineTo(Math.cos(a) * 400, Math.sin(a) * 400);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Mountain silhouettes — distant, misty
+        ctx.fillStyle = 'rgba(20,5,40,0.85)';
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.55);
+        ctx.lineTo(w * 0.15, h * 0.38);
+        ctx.lineTo(w * 0.3, h * 0.44);
+        ctx.lineTo(w * 0.5, h * 0.32);
+        ctx.lineTo(w * 0.7, h * 0.42);
+        ctx.lineTo(w * 0.88, h * 0.34);
+        ctx.lineTo(w, h * 0.5);
+        ctx.lineTo(w, h * 0.6);
+        ctx.lineTo(0, h * 0.6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Floating kanji/ideograms — drift upward + fade pulse
+        const kanji = ['武', '力', '龍', '氣', '道', '神', '鬼'];
+        ctx.font = 'bold 72px "Songti SC", "SimSun", serif';
+        ctx.textAlign = 'center';
+        for (let i = 0; i < kanji.length; i++) {
+            const drift = (this.animTimer * 0.02 + i * 140) % (h + 200) - 100;
+            const ky = h - drift;
+            const kx = w * 0.12 + (i * 93) % Math.max(1, w * 0.76);
+            const kPulse = 0.18 + Math.sin(t * 2 + i * 0.8) * 0.1;
+            ctx.fillStyle = `rgba(255,180,80,${kPulse})`;
+            ctx.fillText(kanji[i], kx, ky);
+        }
+        ctx.textAlign = 'left';
+
+        // Rising ki particles (small gold pixels)
+        ctx.fillStyle = 'rgba(255,220,100,0.7)';
+        for (let i = 0; i < 40; i++) {
+            const px = (i * 71 + this.animTimer * 0.01) % w;
+            const py = h - ((i * 53 + this.animTimer * 0.18) % (h + 60));
+            const size = 2 + (i % 3);
+            ctx.fillRect(Math.round(px), Math.round(py), size, size);
+        }
+
+        // Red paper-lantern accents at top corners
+        [0.1, 0.9].forEach(fx => {
+            const lx = w * fx;
+            const ly = h * 0.12 + Math.sin(t * 1.5 + fx * 5) * 8;
+            ctx.fillStyle = 'rgba(200,30,40,0.85)';
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, 22, 30, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,220,100,0.9)';
+            ctx.fillRect(lx - 2, ly - 40, 4, 12);
+            ctx.fillStyle = 'rgba(255,200,80,0.8)';
+            ctx.fillText('福', lx - 12, ly + 8);
+        });
+
+        ctx.restore();
     },
 
     // Orange/yellow pulsing rings behind the creature while Potenziamento buff is armed.
