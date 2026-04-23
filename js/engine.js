@@ -546,7 +546,7 @@ const Game = {
 
     _renderOverworld(ctx, w, h) {
         // Camera follows player with zoom
-        const zoom = 1.4; // 40% closer
+        const zoom = 2.0; // integer zoom = clean 2x nearest-neighbour on 64px tile PNGs
         const ts = GameMap.TILE_SIZE * GameMap.SCALE;
         const viewW = w / zoom;
         const viewH = h / zoom;
