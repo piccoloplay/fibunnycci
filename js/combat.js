@@ -50,6 +50,13 @@ const Combat = {
 
     // Turn counter fade (0 = hidden, 1 = visible)
     _turnCounterAlpha: 0,
+
+    // Scene-dimming overlay fade (used only where the UI has no backing of
+    // its own, e.g. the "TOCCA PER GIOCARE" prompt).
+    _tapDarkAlpha: 0,
+    _tapDarkPhases: {
+        tap_to_play: true
+    },
     _turnCounterPhases: {
         tap_to_play: true,
         between_turns: true,
@@ -190,6 +197,7 @@ const Combat = {
         this._elementSwapMs = 0;
         this._turnCounterAlpha = 0;
         this._dimensionAlpha = 0;
+        this._tapDarkAlpha = 0;
     },
 
     // ─── UPDATE ───
@@ -213,6 +221,10 @@ const Combat = {
         // Turn counter fade (show during idle/decision phases, hide during action)
         const turnTarget = this._turnCounterPhases[this.phase] ? 1 : 0;
         this._turnCounterAlpha += (turnTarget - this._turnCounterAlpha) * Math.min(1, dt * 0.012);
+
+        // Tap-prompt scene darkening fade (only for phases without own UI backing)
+        const tapDarkTarget = this._tapDarkPhases[this.phase] ? 1 : 0;
+        this._tapDarkAlpha += (tapDarkTarget - this._tapDarkAlpha) * Math.min(1, dt * 0.012);
 
         // Mystical dimension overlay: active while Potenziamento buff is armed
         const dimTarget = (this.playerNextAttackBuff > 1) ? 1 : 0;
@@ -1083,16 +1095,18 @@ const Combat = {
             }
             ctx.drawImage(img, dx, dy, dw, dh);
 
-            // Dark band over the lower half so the action cards / morra
-            // buttons / turn counter sit on readable contrast. Darker near
-            // the horizon (where UI begins) and slightly fading toward the
-            // bottom so the very edge of the canvas isn't pitch black.
-            const uiGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
-            uiGrad.addColorStop(0, 'rgba(0,0,0,0.85)');
-            uiGrad.addColorStop(0.4, 'rgba(0,0,0,0.8)');
-            uiGrad.addColorStop(1, 'rgba(0,0,0,0.55)');
-            ctx.fillStyle = uiGrad;
-            ctx.fillRect(0, h * 0.5, w, h * 0.5);
+            // Scene-dimming overlay, only drawn when the current phase has
+            // no UI backing of its own (e.g. "TOCCA PER GIOCARE"). Fades in
+            // and out across phase changes via _tapDarkAlpha.
+            const a = this._tapDarkAlpha;
+            if (a > 0.01) {
+                const uiGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+                uiGrad.addColorStop(0, `rgba(0,0,0,${0.85 * a})`);
+                uiGrad.addColorStop(0.4, `rgba(0,0,0,${0.8 * a})`);
+                uiGrad.addColorStop(1, `rgba(0,0,0,${0.55 * a})`);
+                ctx.fillStyle = uiGrad;
+                ctx.fillRect(0, h * 0.5, w, h * 0.5);
+            }
         } else {
             // ── SKY ──
             const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
