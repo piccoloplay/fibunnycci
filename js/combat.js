@@ -1083,12 +1083,14 @@ const Combat = {
             }
             ctx.drawImage(img, dx, dy, dw, dh);
 
-            // Dark gradient over the lower half so the action cards / morra
-            // buttons / turn counter sit on readable contrast.
+            // Dark band over the lower half so the action cards / morra
+            // buttons / turn counter sit on readable contrast. Darker near
+            // the horizon (where UI begins) and slightly fading toward the
+            // bottom so the very edge of the canvas isn't pitch black.
             const uiGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
-            uiGrad.addColorStop(0, 'rgba(0,0,0,0)');
-            uiGrad.addColorStop(0.5, 'rgba(0,0,0,0.3)');
-            uiGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+            uiGrad.addColorStop(0, 'rgba(0,0,0,0.85)');
+            uiGrad.addColorStop(0.4, 'rgba(0,0,0,0.8)');
+            uiGrad.addColorStop(1, 'rgba(0,0,0,0.55)');
             ctx.fillStyle = uiGrad;
             ctx.fillRect(0, h * 0.5, w, h * 0.5);
         } else {
