@@ -21,6 +21,7 @@ const Combat = {
     currentTurn: 0,
     playerMorraWins: 0,
     cpuMorraWins: 0,
+    turnHistory: [], // Winner of each non-draw turn in the current round: 1=player, 2=cpu
 
     // Turn state
     playerChoice: -1,   // 0=carta, 1=sasso, 2=forbice
@@ -151,6 +152,7 @@ const Combat = {
 
         this.playerRoundWins = 0;
         this.cpuRoundWins = 0;
+        this.turnHistory = [];
 
         this.phase = 'unit_select';
         this.selectIndex = -1; // Nothing pre-selected
@@ -244,6 +246,7 @@ const Combat = {
                 this.currentTurn = 0;
                 this.playerMorraWins = 0;
                 this.cpuMorraWins = 0;
+                this.turnHistory = [];
             });
             this.phase = 'tap_to_play';
             this.phaseTimer = 0;
@@ -657,11 +660,13 @@ const Combat = {
             this.morraWinner = 1;
             this.playerMorraWins++;
             this.currentTurn++;
+            this.turnHistory.push(1);
             this._applyDamage(this.playerCreature, this.cpuCreature);
         } else {
             this.morraWinner = 2;
             this.cpuMorraWins++;
             this.currentTurn++;
+            this.turnHistory.push(2);
             this._applyDamage(this.cpuCreature, this.playerCreature);
         }
     },
@@ -1115,16 +1120,82 @@ const Combat = {
             ctx.textAlign = 'left';
         }
 
-        // Turn counter
-        // Turn counter — HD
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-        UI.roundRect(ctx, w / 2 - 80, 6, 160, 30, 12);
-        ctx.fill();
-        UI.textOutline(ctx, `${this.playerMorraWins}`, w / 2 - 50, 28, { color: '#60b0ff', size: 20, bold: true, align: 'center' });
-        UI.textOutline(ctx, `Turno ${this.currentTurn}/5`, w / 2, 28, { color: '#fff', size: 16, bold: true, align: 'center' });
-        UI.textOutline(ctx, `${this.cpuMorraWins}`, w / 2 + 50, 28, { color: '#ff6080', size: 20, bold: true, align: 'center' });
+        // Turn counter — positioned around 3/4 height so it reads clearly.
+        this._renderTurnCounter(ctx, w, h);
 
         ctx.restore(); // End camera-zoom wrapper
+    },
+
+    _renderTurnCounter(ctx, w, h) {
+        const maxTurns = 5;
+        const centerY = Math.round(h * 0.55);
+
+        // Panel behind the counter
+        const panelW = 280;
+        const panelH = 92;
+        const panelX = (w - panelW) / 2;
+        const panelY = centerY - panelH / 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        UI.roundRect(ctx, panelX, panelY, panelW, panelH, 16);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, panelX, panelY, panelW, panelH, 16);
+        ctx.stroke();
+
+        // Big "Turno X / 5" text
+        UI.textOutline(ctx, `Turno ${Math.min(this.currentTurn + (this.currentTurn < maxTurns ? 1 : 0), maxTurns)} / ${maxTurns}`, w / 2, centerY - 12, {
+            color: '#fff', size: 26, bold: true, align: 'center'
+        });
+
+        // Dots row — one per turn. Filled blue/red based on who won; outline-gray if not yet played.
+        const dotR = 10;
+        const gap = 18;
+        const totalW = maxTurns * (dotR * 2) + (maxTurns - 1) * gap;
+        const startX = (w - totalW) / 2 + dotR;
+        const dotY = centerY + 20;
+
+        for (let i = 0; i < maxTurns; i++) {
+            const cx = startX + i * (dotR * 2 + gap);
+            const winner = this.turnHistory[i]; // 1, 2, or undefined
+            const isCurrent = i === this.turnHistory.length && (this.phase === 'tap_to_play' || this.phase === 'action_select' || this.phase === 'element_pick' || this.phase === 'morra_choice' || this.phase === 'countdown' || this.phase === 'reveal');
+
+            // Base
+            if (winner === 1) {
+                ctx.fillStyle = '#60b0ff';
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#2060a0';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else if (winner === 2) {
+                ctx.fillStyle = '#ff6080';
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#a02040';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = isCurrent ? '#ffcc44' : 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = isCurrent ? 3 : 1.5;
+                ctx.stroke();
+                if (isCurrent) {
+                    // Pulsing halo for the current turn
+                    const pulse = 0.5 + Math.sin(this.animTimer * 0.006) * 0.5;
+                    ctx.strokeStyle = `rgba(255,204,68,${0.4 * pulse})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(cx, dotY, dotR + 4 + pulse * 2, 0, Math.PI * 2); ctx.stroke();
+                }
+            }
+        }
+
+        // Tiny legend
+        UI.text(ctx, `${this.playerMorraWins}`, panelX + 24, centerY + 26, {
+            color: '#60b0ff', size: 16, bold: true, align: 'center'
+        });
+        UI.text(ctx, `${this.cpuMorraWins}`, panelX + panelW - 24, centerY + 26, {
+            color: '#ff6080', size: 16, bold: true, align: 'center'
+        });
     },
 
     // Orange/yellow pulsing rings behind the creature while Potenziamento buff is armed.
