@@ -13,6 +13,7 @@ const Menu = {
         { label: 'Inventario', icon: 'inventory', view: 'inventory', color1: '#44cc66', color2: '#22aa44' },
         { label: 'Mappa', icon: 'map', view: 'worldmap', color1: '#cc44aa', color2: '#aa2288' },
         { label: 'Salva', icon: 'save', view: 'save', color1: '#4488ff', color2: '#2266cc' },
+        { label: 'Opzioni', icon: 'settings', view: 'options', color1: '#888844', color2: '#666622' },
         { label: 'Chiudi', icon: 'close', view: 'close', color1: '#888899', color2: '#666677' }
     ],
 
@@ -91,6 +92,9 @@ const Menu = {
                 } else if (item.view === 'worldmap') {
                     this.close();
                     Game._openWorldMap();
+                } else if (item.view === 'options') {
+                    this.close();
+                    Debug.toggle();
                 } else {
                     this.currentView = item.view;
                     this._scrollOffset = 0;
