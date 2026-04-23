@@ -55,7 +55,8 @@ const Combat = {
     // its own, e.g. the "TOCCA PER GIOCARE" prompt).
     _tapDarkAlpha: 0,
     _tapDarkPhases: {
-        tap_to_play: true
+        // tap_to_play now uses its own local banner behind the prompt,
+        // so no scene-wide dimming is needed.
     },
     _turnCounterPhases: {
         tap_to_play: true,
@@ -1684,22 +1685,38 @@ const Combat = {
 
     // ─── RENDER: TAP TO PLAY ───
     _renderTapToPlay(ctx, w, h) {
+        // Small rounded banner behind the prompt so contrast is guaranteed
+        // without darkening the whole scene.
+        const bannerH = 70;
+        const bannerY = h * 0.75 - bannerH / 2 - 4;
+        const bannerW = Math.min(w - 60, 520);
+        const bannerX = (w - bannerW) / 2;
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        UI.roundRect(ctx, bannerX, bannerY, bannerW, bannerH, 16);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,204,0,0.5)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, bannerX, bannerY, bannerW, bannerH, 16);
+        ctx.stroke();
+
         const blink = Math.sin(this.animTimer * 0.004) > 0;
+        ctx.save();
         if (blink) {
-            // Swipe up indicator
-            ctx.save();
             ctx.shadowColor = '#ffcc00';
-            ctx.shadowBlur = 15;
-            UI.text(ctx, 'TOCCA PER GIOCARE', w / 2, h * 0.75, {
-                color: '#ffcc00', size: 26, bold: true, align: 'center'
-            });
-            ctx.restore();
-            // Arrow up hint
-            const arrowBob = Math.sin(this.animTimer * 0.005) * 8;
-            UI.text(ctx, '▲', w / 2, h * 0.7 + arrowBob, {
-                color: 'rgba(255,204,0,0.5)', size: 30, align: 'center'
-            });
+            ctx.shadowBlur = 14;
         }
+        UI.textOutline(ctx, 'TOCCA PER GIOCARE', w / 2, h * 0.75 + 6, {
+            color: blink ? '#ffcc00' : '#c4a050', size: 26, bold: true,
+            align: 'center', outlineColor: '#000', outlineWidth: 4
+        });
+        ctx.restore();
+
+        // Bobbing arrow above the banner
+        const arrowBob = Math.sin(this.animTimer * 0.005) * 8;
+        UI.textOutline(ctx, '▲', w / 2, bannerY - 12 + arrowBob, {
+            color: '#ffcc00', size: 30, align: 'center',
+            outlineColor: '#000', outlineWidth: 3
+        });
     },
 
     // ─── RENDER: ACTION SELECT ───
@@ -1962,11 +1979,15 @@ const Combat = {
             // Draw icon
             this._drawMorraIcon(ctx, i, selected);
 
-            // Label below
-            ctx.fillStyle = selected ? '#fff' : '#aaa';
-            ctx.font = selected ? 'bold 18px Nunito, sans-serif' : '16px Nunito, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(col.name, 0, btnSize * 0.44 + 16);
+            // Label below — outlined, larger, always high-contrast
+            UI.textOutline(ctx, col.name, 0, btnSize * 0.44 + 22, {
+                color: selected ? '#ffee66' : '#ffffff',
+                size: 22,
+                bold: true,
+                align: 'center',
+                outlineColor: '#000',
+                outlineWidth: 4
+            });
 
             ctx.restore();
         }
