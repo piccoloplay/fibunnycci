@@ -106,8 +106,8 @@ const Dialogue = {
     // ─── NORMAL DIALOGUE (textbox over overworld) ───
     _renderNormal(ctx, w, h) {
         const boxH = 180;
-        // Anchored near the bottom so it doesn't cover creatures/NPCs on screen.
-        const boxY = h - boxH - 160;
+        // Stick just above the 100 px bottom nav bar — clear separation.
+        const boxY = h - boxH - 110;
         const boxX = 24;
         const boxW = w - 48;
 
