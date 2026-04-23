@@ -152,11 +152,21 @@ const Combat = {
     },
 
     // ─── START ───
+    _bgImage: null,
+
+    _ensureBgLoaded() {
+        if (this._bgImage) return;
+        const img = new Image();
+        img.src = 'assets/sprites/backgrounds/battle_forest.png';
+        this._bgImage = img;
+    },
+
     start(playerTeam, cpuTeam, canvasW, canvasH, stageId) {
         this.active = true;
         this._w = canvasW;
         this._h = canvasH;
         this._stageId = stageId || 'villaggio';
+        this._ensureBgLoaded();
 
         // Deep copy teams so we don't mutate originals
         this.playerTeam = playerTeam.map(c => ({...c, currentHp: c.maxHp, usedOneshot: false}));
@@ -1049,39 +1059,64 @@ const Combat = {
         const stage = this.STAGES[this._stageId] || this.STAGES.villaggio;
         const t = this.animTimer;
 
-        // ── SKY ──
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
-        stage.sky.forEach((c, i) => skyGrad.addColorStop(i / (stage.sky.length - 1), c));
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, w, h * 0.55);
+        // ── BACKGROUND ──
+        // Preferred path: a pre-rendered battle PNG covers the whole canvas.
+        // Falls back to the procedural sky/mountains/ground if the image is
+        // not loaded yet, so the first frames never flash black.
+        if (Combat._bgImage && Combat._bgImage.complete && Combat._bgImage.naturalWidth > 0) {
+            const img = Combat._bgImage;
+            // Cover-fit: scale so the shorter image axis fills the canvas axis,
+            // crop the overflow equally on both sides of the longer axis.
+            const imgRatio = img.width / img.height;
+            const canvasRatio = w / h;
+            let dw, dh, dx, dy;
+            if (imgRatio > canvasRatio) {
+                dh = h;
+                dw = h * imgRatio;
+                dx = (w - dw) / 2;
+                dy = 0;
+            } else {
+                dw = w;
+                dh = w / imgRatio;
+                dx = 0;
+                dy = (h - dh) / 2;
+            }
+            ctx.drawImage(img, dx, dy, dw, dh);
+        } else {
+            // ── SKY ──
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+            stage.sky.forEach((c, i) => skyGrad.addColorStop(i / (stage.sky.length - 1), c));
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h * 0.55);
 
-        // ── MOUNTAINS / HORIZON ──
-        ctx.fillStyle = stage.mountains;
-        ctx.beginPath();
-        ctx.moveTo(0, h * 0.38);
-        ctx.lineTo(w * 0.1, h * 0.28);
-        ctx.lineTo(w * 0.22, h * 0.32);
-        ctx.lineTo(w * 0.35, h * 0.2);
-        ctx.lineTo(w * 0.5, h * 0.3);
-        ctx.lineTo(w * 0.65, h * 0.18);
-        ctx.lineTo(w * 0.78, h * 0.3);
-        ctx.lineTo(w * 0.9, h * 0.25);
-        ctx.lineTo(w, h * 0.35);
-        ctx.lineTo(w, h * 0.45);
-        ctx.lineTo(0, h * 0.45);
-        ctx.closePath();
-        ctx.fill();
+            // ── MOUNTAINS / HORIZON ──
+            ctx.fillStyle = stage.mountains;
+            ctx.beginPath();
+            ctx.moveTo(0, h * 0.38);
+            ctx.lineTo(w * 0.1, h * 0.28);
+            ctx.lineTo(w * 0.22, h * 0.32);
+            ctx.lineTo(w * 0.35, h * 0.2);
+            ctx.lineTo(w * 0.5, h * 0.3);
+            ctx.lineTo(w * 0.65, h * 0.18);
+            ctx.lineTo(w * 0.78, h * 0.3);
+            ctx.lineTo(w * 0.9, h * 0.25);
+            ctx.lineTo(w, h * 0.35);
+            ctx.lineTo(w, h * 0.45);
+            ctx.lineTo(0, h * 0.45);
+            ctx.closePath();
+            ctx.fill();
 
-        // Horizon strip
-        ctx.fillStyle = stage.horizonColor;
-        ctx.fillRect(0, h * 0.42, w, h * 0.13);
+            // Horizon strip
+            ctx.fillStyle = stage.horizonColor;
+            ctx.fillRect(0, h * 0.42, w, h * 0.13);
 
-        // ── GROUND ──
-        const groundGrad = ctx.createLinearGradient(0, h * 0.52, 0, h);
-        groundGrad.addColorStop(0, stage.ground);
-        groundGrad.addColorStop(1, stage.groundAccent);
-        ctx.fillStyle = groundGrad;
-        ctx.fillRect(0, h * 0.52, w, h * 0.48);
+            // ── GROUND ──
+            const groundGrad = ctx.createLinearGradient(0, h * 0.52, 0, h);
+            groundGrad.addColorStop(0, stage.ground);
+            groundGrad.addColorStop(1, stage.groundAccent);
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, h * 0.52, w, h * 0.48);
+        }
 
         // Ground texture lines
         ctx.strokeStyle = stage.groundAccent;
