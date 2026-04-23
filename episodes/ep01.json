@@ -52,16 +52,41 @@
         },
         {
             "id": "student",
-            "name": "Kuro",
+            "name": "Kuro il Ribelle",
             "sprite": "student",
             "x": 13,
             "y": 12,
             "direction": "down",
             "color": "#2c4a8a",
             "dialogue": [[
-                "Hai visto gli appunti di ieri?",
-                "Fibonacci è un casino sinceramente."
-            ]]
+                "Oh, eccoti Piccoloplay!",
+                "Vuoi vedere chi è più forte?",
+                "Le mie creature ti aspettano!"
+            ]],
+            "triggerCombat": [
+                { "id": "topo", "creatureName": "Topo Rosso", "element": "fuoco", "maxHp": 75, "atk": 30, "def": 5, "critChance": 0.22, "evasionChance": 0.15, "color": "#cc4444", "accent": "#ee6666" },
+                { "id": "serpente", "creatureName": "Serpente Nero", "element": "acqua", "maxHp": 70, "atk": 34, "def": 4, "critChance": 0.30, "evasionChance": 0.08, "color": "#444444", "accent": "#666666" },
+                { "id": "gallo", "creatureName": "Gallo d'Oro", "element": "metallo", "maxHp": 95, "atk": 28, "def": 9, "critChance": 0.15, "evasionChance": 0.06, "color": "#cc9933", "accent": "#eebb55" }
+            ]
+        },
+        {
+            "id": "poliziotto_boss",
+            "name": "Capitano Shiro",
+            "sprite": "poliziotto",
+            "x": 3,
+            "y": 4,
+            "direction": "down",
+            "color": "#557733",
+            "dialogue": [[
+                "Fermo là, coniglio.",
+                "Non passa nessuno senza aver provato il mio team.",
+                "In guardia."
+            ]],
+            "triggerCombat": [
+                { "id": "drago", "creatureName": "Drago Jade", "element": "legno", "maxHp": 105, "atk": 35, "def": 7, "critChance": 0.18, "evasionChance": 0.05, "color": "#33aa66", "accent": "#55cc88" },
+                { "id": "tigre", "creatureName": "Tigre Bianca", "element": "metallo", "maxHp": 80, "atk": 40, "def": 4, "critChance": 0.28, "evasionChance": 0.08, "color": "#dddddd", "accent": "#ffffff" },
+                { "id": "bue", "creatureName": "Bue di Ferro", "element": "metallo", "maxHp": 125, "atk": 26, "def": 11, "critChance": 0.08, "evasionChance": 0.02, "color": "#778899", "accent": "#99aabb" }
+            ]
         }
     ],
     "party": ["coniglio", "cavallo", "bue"],
