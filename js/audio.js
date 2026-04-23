@@ -83,27 +83,27 @@ const Audio = {
         if (!this.enabled) return;
 
         const track = this.MUSIC[id];
-        if (!track) { this.stopMusic(300); return; }
+        if (!track) { this.stopMusic(0); return; }
 
-        // Same id and already playing (or finishing its fade-in) → no-op.
-        if (this._currentMusicId === id) {
-            const a = this._audio;
-            if (a && !a.paused && a.src && a.src.indexOf(track.src || '') !== -1) return;
-            if (this._procInterval && !track.src) return;
+        // Already playing this exact track at target volume? Bail out.
+        const audio = this._audio;
+        const sameSrc = track.src && audio && audio.currentSrc &&
+                        audio.currentSrc.indexOf(track.src) !== -1;
+        if (this._currentMusicId === id && audio && !audio.paused && sameSrc && audio.volume > 0.01) {
+            return;
         }
 
-        this._currentMusicId = id;
-
-        // Cancel every fade and the procedural loop.
+        // Cancel every timer / procedural loop.
         this._stopFadeIn();
         this._stopFadeOut();
         this._stopProcedural();
 
-        // No file → procedural or silence.
+        this._currentMusicId = id;
+
+        // No file → silence + optional procedural chiptune.
         if (!track.src) {
-            const audio = this._audio;
             if (audio && !audio.paused) {
-                this._fadeOut(audio, 300, () => { try { audio.pause(); } catch (e) {} });
+                try { audio.pause(); audio.volume = 0; } catch (e) {}
             }
             if (this._initialized && track.procedural) {
                 this._playProceduralMusic(track.procedural);
@@ -111,27 +111,17 @@ const Audio = {
             return;
         }
 
-        // Real file. One persistent element, just swap src. Quick fade-out if
-        // something is already playing so the handoff isn't jarring.
-        const audio = this._ensureAudioElement();
-        const doSwitch = () => {
-            if (this._currentMusicId !== id) return; // user switched again during the fade
-            try { audio.pause(); } catch (e) {}
-            try {
-                audio.src = track.src;
-                audio.load();
-            } catch (e) {}
-            const p = audio.play();
-            if (p && typeof p.catch === 'function') p.catch(() => {});
-            this._fadeIn(audio, 500);
-        };
-
-        if (audio.src && !audio.paused) {
-            this._fadeOut(audio, 250, doSwitch);
-        } else {
-            audio.volume = 0;
-            doSwitch();
+        // Real file: reuse the persistent <audio>, just hot-swap the src.
+        const el = this._ensureAudioElement();
+        if (!sameSrc) {
+            try { el.pause(); } catch (e) {}
+            el.src = track.src;
+            try { el.load(); } catch (e) {}
         }
+        el.volume = 0;
+        const p = el.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+        this._fadeIn(el, 500);
     },
 
     // Stop everything. Use for title returns / game resets.
