@@ -6,6 +6,7 @@ const Game = {
     _pendingTris: null,
     _pendingCombat: null,
     _pendingVN: null,
+    _loadingAfter: null,    // callback to run once all assets are in cache
     _currentAreaId: 'villaggio',
     _transitionTimer: 0,
     _transitionTarget: null, // {episode, x, y, areaId}
@@ -227,6 +228,14 @@ const Game = {
                     Audio.playMusic(this._currentAreaId);
                 }
                 break;
+            case 'loading':
+                if (Sprites.isReady() && GameMap.isReady()) {
+                    const after = this._loadingAfter;
+                    this._loadingAfter = null;
+                    this.state = 'overworld';
+                    if (after) after();
+                }
+                break;
             case 'combat':
                 Combat.update(dt);
                 if (!Combat.active) {
@@ -289,8 +298,11 @@ const Game = {
         this.gameState.unlockedAreas = [0, 1];
         this.gameState.collection = Creatures.collection;
         this.playTime = 0;
-        this.state = 'overworld';
-        Audio.playMusic(this._currentAreaId);
+        // Hand off to the loading screen — it waits for all PNG assets
+        // to settle before dropping into the overworld and starting music.
+        this._enterLoading(() => {
+            Audio.playMusic(this._currentAreaId);
+        });
         this._loading = false;
     },
 
@@ -309,8 +321,9 @@ const Game = {
             return;
         }
         this._tryLoadAutoSave();
-        this.state = 'overworld';
-        Audio.playMusic(this._currentAreaId);
+        this._enterLoading(() => {
+            Audio.playMusic(this._currentAreaId);
+        });
         this._loading = false;
     },
 
@@ -471,6 +484,10 @@ const Game = {
                 VN.render(ctx, w, h);
                 break;
 
+            case 'loading':
+                this._renderLoading(ctx, w, h);
+                break;
+
             case 'transition':
                 // Render overworld behind the fade
                 this._renderOverworld(ctx, w, h);
@@ -526,6 +543,52 @@ const Game = {
         return { x: w - s - 10, y: this._fsBtn.y, w: s, h: s };
     },
 
+    // ─── LOADING STATE ───
+    _enterLoading(after) {
+        this._loadingAfter = after || null;
+        this.state = 'loading';
+    },
+
+    _renderLoading(ctx, w, h) {
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, w, h);
+
+        // Combined progress: sprite cache + map image/mask
+        const sprP = Sprites.progress ? Sprites.progress() : 1;
+        const mapP = GameMap.isReady() ? 1 : 0;
+        const p = Math.max(0, Math.min(1, sprP * 0.85 + mapP * 0.15));
+
+        UI.text(ctx, 'Caricamento…', w / 2, h * 0.45, {
+            color: '#fff', size: 28, bold: true, align: 'center'
+        });
+
+        const barW = Math.min(w - 80, 420);
+        const barH = 18;
+        const bx = (w - barW) / 2;
+        const by = h * 0.5;
+
+        // Track
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        UI.roundRect(ctx, bx, by, barW, barH, 9);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, bx, by, barW, barH, 9);
+        ctx.stroke();
+
+        // Fill
+        ctx.fillStyle = '#ffcc44';
+        UI.roundRect(ctx, bx, by, Math.max(4, barW * p), barH, 9);
+        ctx.fill();
+
+        // Counter
+        const done = (Sprites._loadsDone || 0);
+        const total = (Sprites._loadsTotal || 0);
+        UI.text(ctx, `${done} / ${total} asset`, w / 2, by + barH + 30, {
+            color: '#bbc', size: 16, align: 'center'
+        });
+    },
+
     // ─── "PARLA CON <NPC>" BUTTON ───
     // Returns the first talkable NPC (directly-faced tile first, then
     // any cardinal neighbour). Only valid when standing still in overworld.
@@ -542,11 +605,14 @@ const Game = {
         return null;
     },
 
-    // Rect of the Parla button (used by both render and touch hit-test)
+    // Rect of the Parla button (used by both render and touch hit-test).
+    // Sized generously because touch targets on a 672-wide canvas scale
+    // down to ~390 CSS px on a phone — at that scale a ~60px tall pill is
+    // borderline unreachable with a thumb.
     _getParlaBtnRect(w, h) {
-        const bw = 300, bh = 58;
+        const bw = Math.min(w - 40, 480), bh = 92;
         const barH = this._navBarHeight || 100;
-        return { x: w / 2 - bw / 2, y: h - barH - bh - 24, w: bw, h: bh };
+        return { x: w / 2 - bw / 2, y: h - barH - bh - 28, w: bw, h: bh };
     },
 
     _renderParlaButton(ctx, w, h) {
@@ -554,18 +620,18 @@ const Game = {
         if (!npc) return;
         const r = this._getParlaBtnRect(w, h);
         // Pulse
-        const pulse = 0.85 + Math.sin(performance.now() * 0.006) * 0.08;
+        const pulse = 0.88 + Math.sin(performance.now() * 0.006) * 0.08;
         ctx.save();
         ctx.globalAlpha = pulse;
         ctx.fillStyle = 'rgba(40,50,100,0.94)';
-        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 28);
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 38);
         ctx.fill();
         ctx.strokeStyle = 'rgba(200,220,255,0.9)';
-        ctx.lineWidth = 3;
-        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 28);
+        ctx.lineWidth = 4;
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 38);
         ctx.stroke();
-        UI.text(ctx, '💬  Parla con ' + npc.name, r.x + r.w / 2, r.y + r.h / 2 + 7, {
-            color: '#fff', size: 20, bold: true, align: 'center'
+        UI.text(ctx, '💬  Parla con ' + npc.name, r.x + r.w / 2, r.y + r.h / 2 + 10, {
+            color: '#fff', size: 28, bold: true, align: 'center'
         });
         ctx.restore();
     },

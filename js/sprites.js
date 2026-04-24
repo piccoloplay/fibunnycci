@@ -75,12 +75,37 @@ const Sprites = {
     },
     _tileImgCache: {},       // HTMLImageElement per tileId, null while loading, undefined if no entry
 
+    // ─── LOAD PROGRESS TRACKING ───
+    // Every Image() kicked off by the loaders below registers with this
+    // counter so the engine can show a loading bar and wait until
+    // everything is in cache before leaving the title screen.
+    _loadsTotal: 0,
+    _loadsDone: 0,
+
+    _trackImage(onDone) {
+        this._loadsTotal++;
+        let settled = false;
+        return () => {
+            if (settled) return;
+            settled = true;
+            this._loadsDone++;
+            if (onDone) onDone();
+        };
+    },
+
+    isReady() { return this._loadsDone >= this._loadsTotal; },
+    progress() {
+        if (this._loadsTotal === 0) return 1;
+        return this._loadsDone / this._loadsTotal;
+    },
+
     loadTileImages() {
         for (const [id, path] of Object.entries(this.TILE_IMAGES)) {
             if (this._tileImgCache[id]) continue;
             const img = new Image();
-            img.onload = () => { this._tileImgCache[id] = img; };
-            img.onerror = () => { this._tileImgCache[id] = null; };
+            const done = this._trackImage();
+            img.onload  = () => { this._tileImgCache[id] = img;  done(); };
+            img.onerror = () => { this._tileImgCache[id] = null; done(); };
             img.src = path;
             this._tileImgCache[id] = null; // "loading" marker
         }
@@ -299,8 +324,9 @@ const Sprites = {
             for (const el of els) {
                 const key = `creature_${id}_${el}`;
                 const img = new Image();
-                img.onload = () => { this._cache[key] = img; };
-                img.onerror = () => { /* leave procedural fallback */ };
+                const done = this._trackImage();
+                img.onload  = () => { this._cache[key] = img; done(); };
+                img.onerror = () => { done(); /* leave procedural fallback */ };
                 img.src = `assets/sprites/creatures/${key}.png`;
             }
         }
@@ -312,8 +338,9 @@ const Sprites = {
             for (let f = 0; f < 8; f++) {
                 const key = `npc_${name}_${f}`;
                 const img = new Image();
-                img.onload = () => { this._cache[key] = img; };
-                img.onerror = () => {};
+                const done = this._trackImage();
+                img.onload  = () => { this._cache[key] = img; done(); };
+                img.onerror = () => { done(); };
                 img.src = `assets/sprites/characters/${key}.png`;
             }
         }
@@ -331,8 +358,9 @@ const Sprites = {
         for (const [dir, frame] of this.PLAYER_FRAMES) {
             const key = `player_${dir}_${frame}`;
             const img = new Image();
-            img.onload = () => { this._cache[key] = img; };
-            img.onerror = () => { /* keep procedural fallback */ };
+            const done = this._trackImage();
+            img.onload  = () => { this._cache[key] = img; done(); };
+            img.onerror = () => { done(); /* keep procedural fallback */ };
             img.src = `assets/sprites/characters/${key}.png`;
         }
     },

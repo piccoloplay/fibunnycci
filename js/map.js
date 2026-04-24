@@ -10,6 +10,7 @@ const GameMap = {
 
     bgImage: null,
     bgReady: false,
+    maskReady: true,     // true when there's no mask or it's done loading
 
     _mask: null,         // Uint8ClampedArray (RGBA) of the collision PNG
     _maskW: 0,
@@ -17,6 +18,8 @@ const GameMap = {
 
     exits: [],
     TILES: {},           // kept empty so debug overlays don't crash
+
+    isReady() { return this.bgReady && this.maskReady; },
 
     loadFromEpisode(episodeData) {
         const mapCfg = episodeData.map || {};
@@ -30,11 +33,13 @@ const GameMap = {
             this.height = Math.max(1, Math.floor(this.bgImage.height / ts));
             this.bgReady = true;
         };
+        this.bgImage.onerror = () => { this.bgReady = true; /* unblock */ };
         this.bgImage.src = mapCfg.image;
 
         // Optional collision mask
         this._mask = null;
         if (mapCfg.collision) {
+            this.maskReady = false;
             const m = new Image();
             m.onload = () => {
                 const c = document.createElement('canvas');
@@ -44,8 +49,12 @@ const GameMap = {
                 this._mask = cx.getImageData(0, 0, m.width, m.height).data;
                 this._maskW = m.width;
                 this._maskH = m.height;
+                this.maskReady = true;
             };
+            m.onerror = () => { this.maskReady = true; };
             m.src = mapCfg.collision;
+        } else {
+            this.maskReady = true;
         }
     },
 
