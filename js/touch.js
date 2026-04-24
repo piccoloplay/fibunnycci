@@ -58,7 +58,8 @@ const Touch = {
         canvas.addEventListener('mousedown', e => {
             if (Audio.unlock) Audio.unlock();
             const pos = this._getMousePos(e);
-            if (this._joystickContains(pos)) {
+            if (Game.state === 'overworld' && !Debug.active) {
+                if (this._tryOverworldUITap(pos)) return;
                 this._joystickStart(pos);
                 return;
             }
@@ -118,7 +119,8 @@ const Touch = {
         e.preventDefault();
         if (Audio.unlock) Audio.unlock();
         const pos = this._getCanvasPos(e.touches[0]);
-        if (this._joystickContains(pos)) {
+        if (Game.state === 'overworld' && !Debug.active) {
+            if (this._tryOverworldUITap(pos)) return;
             this._joystickStart(pos);
             return;
         }
@@ -718,27 +720,52 @@ const Touch = {
         deadZone: 0.22      // fraction of baseR below which no direction is issued
     },
 
-    _layoutJoystick(w, h) {
-        this._joy.baseX = 140;
-        this._joy.baseY = h - 260; // above the nav bar (100px tall at bottom)
-        if (this._joy.thumbX === 0 && this._joy.thumbY === 0) {
-            this._joy.thumbX = this._joy.baseX;
-            this._joy.thumbY = this._joy.baseY;
-        }
-    },
+    _tryOverworldUITap(pos) {
+        const w = this._canvas.width;
+        const h = this._canvas.height;
 
-    _joystickContains(pos) {
-        if (Game.state !== 'overworld') return false;
-        this._layoutJoystick(this._canvas.width, this._canvas.height);
-        const dx = pos.x - this._joy.baseX;
-        const dy = pos.y - this._joy.baseY;
-        return (dx * dx + dy * dy) <= this._joy.hitR * this._joy.hitR;
+        // Fullscreen button (top-right)
+        if (Game._getFullscreenBtnRect) {
+            const r = Game._getFullscreenBtnRect(w);
+            if (pos.x >= r.x - 4 && pos.x <= r.x + r.w + 4 &&
+                pos.y >= r.y - 4 && pos.y <= r.y + r.h + 4) {
+                Game.toggleFullscreen();
+                Audio.play('confirm');
+                return true;
+            }
+        }
+
+        // Nav bar (bottom strip)
+        const barH = Game._navBarHeight || 90;
+        if (pos.y >= h - barH) {
+            this._handleNavBarTap(pos);
+            return true;
+        }
+
+        // "Parla con <NPC>" button (only shown when adjacent to an NPC)
+        if (typeof Game._getTalkableNpc === 'function' &&
+            typeof Game._getParlaBtnRect === 'function') {
+            const npc = Game._getTalkableNpc();
+            if (npc) {
+                const r = Game._getParlaBtnRect(w, h);
+                if (pos.x >= r.x && pos.x <= r.x + r.w &&
+                    pos.y >= r.y && pos.y <= r.y + r.h) {
+                    Game._startNpcDialog(npc);
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 
     _joystickStart(pos) {
+        // Floating joystick: base spawns where the user touched down.
+        this._joy.baseX = pos.x;
+        this._joy.baseY = pos.y;
+        this._joy.thumbX = pos.x;
+        this._joy.thumbY = pos.y;
         this._joy.active = true;
         this.cancelPath(); // any in-flight tap-path is overridden by the stick
-        this._joystickMove(pos);
     },
 
     _joystickMove(pos) {
@@ -794,11 +821,12 @@ const Touch = {
 
     renderOverlay(ctx, w, h) {
         if (Game.state !== 'overworld') return;
-        this._layoutJoystick(w, h);
         const j = this._joy;
+        // Floating joystick: only visible while held
+        if (!j.active) return;
         ctx.save();
         // Base
-        ctx.globalAlpha = j.active ? 0.85 : 0.45;
+        ctx.globalAlpha = 0.8;
         ctx.fillStyle = 'rgba(15,15,35,0.55)';
         ctx.beginPath();
         ctx.arc(j.baseX, j.baseY, j.baseR, 0, Math.PI * 2);

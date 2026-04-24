@@ -419,14 +419,12 @@ const Game = {
             }
         }
 
-        // Interact with NPC via keyboard confirm when facing
+        // Interact with NPC via keyboard confirm when facing one.
+        // Touch users go through the explicit "Parla con …" button instead.
         if (Input.wasPressed('confirm') && !Player.moving) {
             const facing = Player.getFacingTile();
             const npc = NPC.getAt(facing.x, facing.y);
-            if (npc && (Touch._tappedNpc || !Touch.enabled)) {
-                Touch._tappedNpc = false;
-                this._startNpcDialog(npc);
-            }
+            if (npc) this._startNpcDialog(npc);
         }
 
         // Open menu
@@ -526,6 +524,50 @@ const Game = {
     _getFullscreenBtnRect(w) {
         const s = this._fsBtn.size;
         return { x: w - s - 10, y: this._fsBtn.y, w: s, h: s };
+    },
+
+    // ─── "PARLA CON <NPC>" BUTTON ───
+    // Returns the first talkable NPC (directly-faced tile first, then
+    // any cardinal neighbour). Only valid when standing still in overworld.
+    _getTalkableNpc() {
+        if (this.state !== 'overworld' || Player.moving) return null;
+        const facing = Player.getFacingTile();
+        const facedNpc = NPC.getAt(facing.x, facing.y);
+        if (facedNpc) return facedNpc;
+        const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+        for (const [dx, dy] of dirs) {
+            const n = NPC.getAt(Player.gridX + dx, Player.gridY + dy);
+            if (n) return n;
+        }
+        return null;
+    },
+
+    // Rect of the Parla button (used by both render and touch hit-test)
+    _getParlaBtnRect(w, h) {
+        const bw = 300, bh = 58;
+        const barH = this._navBarHeight || 100;
+        return { x: w / 2 - bw / 2, y: h - barH - bh - 24, w: bw, h: bh };
+    },
+
+    _renderParlaButton(ctx, w, h) {
+        const npc = this._getTalkableNpc();
+        if (!npc) return;
+        const r = this._getParlaBtnRect(w, h);
+        // Pulse
+        const pulse = 0.85 + Math.sin(performance.now() * 0.006) * 0.08;
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = 'rgba(40,50,100,0.94)';
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 28);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200,220,255,0.9)';
+        ctx.lineWidth = 3;
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 28);
+        ctx.stroke();
+        UI.text(ctx, '💬  Parla con ' + npc.name, r.x + r.w / 2, r.y + r.h / 2 + 7, {
+            color: '#fff', size: 20, bold: true, align: 'center'
+        });
+        ctx.restore();
     },
 
     _renderFullscreenButton(ctx, w) {
@@ -689,22 +731,11 @@ const Game = {
         }
 
         if (this.state === 'overworld' && !Player.moving) {
-            const facing = Player.getFacingTile();
-            const npc = NPC.getAt(facing.x, facing.y);
-            if (npc) {
-                // Hint bubble
-                ctx.fillStyle = 'rgba(0,0,0,0.55)';
-                const hint = 'Tocca per parlare';
-                ctx.font = UI.fontBold(16);
-                const hintW = ctx.measureText(hint).width;
-                UI.roundRect(ctx, w / 2 - hintW / 2 - 14, 44, hintW + 28, 30, 12);
-                ctx.fill();
-                UI.text(ctx, hint, w / 2, 66, {
-                    color: '#ffcc00', size: 16, bold: true, align: 'center'
-                });
-            }
+            // Tappable "Parla con <npc>" button (replaces the old passive hint)
+            this._renderParlaButton(ctx, w, h);
 
             // Exit zone hint
+            const facing = Player.getFacingTile();
             const nearbyExit = GameMap.getExitAt(Player.gridX, Player.gridY) ||
                 GameMap.getExitAt(facing.x, facing.y);
             if (nearbyExit && nearbyExit.label) {
