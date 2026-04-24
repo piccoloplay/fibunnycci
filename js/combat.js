@@ -1375,7 +1375,10 @@ const Combat = {
         ctx.globalAlpha = this._turnCounterAlpha;
 
         const maxTurns = 5;
-        const centerY = Math.round(h * 0.55);
+        // Placed above the HP bars / PLAYER-CPU pills (which start around
+        // y = 0.42h - 165 ≈ 0.30h). Sitting at ≈ 0.15h keeps it centered
+        // in the empty band between the top buttons and the status pills.
+        const centerY = Math.round(h * 0.15);
 
         // Panel behind the counter
         const panelW = 280;
