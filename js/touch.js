@@ -303,6 +303,31 @@ const Touch = {
         const w = this._canvas.width;
         const h = this._canvas.height;
 
+        // Tutorial overlay intercepts everything while shown
+        if (Combat._tutorial && Combat._tutorial.show) {
+            const br = Combat._getTutorialBtnRect(w, h);
+            const onBtn = pos.x >= br.x && pos.x <= br.x + br.w &&
+                          pos.y >= br.y && pos.y <= br.y + br.h;
+            // Advance on button tap OR any tap outside the button (tap-through
+            // pattern from most mobile tutorials)
+            const total = Combat.TUTORIAL_SLIDES.length;
+            if (Combat._tutorial.step >= total - 1) {
+                Combat._closeTutorial();
+            } else if (onBtn || true) {
+                Combat._tutorial.step++;
+            }
+            return;
+        }
+
+        // Top-left help button — reopens the tutorial
+        const hr = Combat._getHelpBtnRect(w);
+        if (pos.x >= hr.x && pos.x <= hr.x + hr.w &&
+            pos.y >= hr.y && pos.y <= hr.y + hr.h) {
+            Combat._openTutorial();
+            Audio.play('confirm');
+            return;
+        }
+
         if (Combat.phase === 'tap_to_play' || Combat.phase === 'round_end' || Combat.phase === 'match_end') {
             Input.triggerPress('z');
             return;
@@ -348,8 +373,8 @@ const Touch = {
 
         if (Combat.phase === 'action_select') {
             const cardW = w - 60;
-            const cardH = 64;
-            const gap = 12;
+            const cardH = 84;
+            const gap = 14;
             const startY = h * 0.66;
             const startX = 30;
             for (let i = 0; i < Combat.ACTIONS.length; i++) {

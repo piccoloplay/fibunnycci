@@ -169,12 +169,45 @@ const Combat = {
         this._bgImage = img;
     },
 
+    // ─── HOW-TO-PLAY TUTORIAL ───
+    TUTORIAL_SLIDES: [
+        {
+            title: 'Match a turni',
+            body: 'Best of 3 round. Vince chi chiude 2 round. Ogni round finisce per KO, 3 vittorie morra, o più HP dopo 5 turni.'
+        },
+        {
+            title: 'Le 3 azioni',
+            body: 'ATTACCO: morra + danno elementale.\nPOTENZIAMENTO: paghi HP, +80% danno al prossimo hit (una volta per match).\nCAMBIO ELEMENTO: cambi tipo elementale (una volta per match).'
+        },
+        {
+            title: 'Feng Shui',
+            body: 'Ogni elemento batte il successivo del ciclo. "Super efficace!" = 1.5x danno. "Poco efficace..." = 0.67x. Usa il cambio elemento per girare il matchup.'
+        },
+        {
+            title: 'Come si tappa',
+            body: 'Tocca l\'azione, poi scegli sasso / carta / forbice. Il tutorial si riapre dal "?" in alto a sinistra.'
+        }
+    ],
+    _tutorial: { show: false, step: 0 },
+    _openTutorial() { this._tutorial = { show: true, step: 0 }; },
+    _closeTutorial() {
+        this._tutorial.show = false;
+        if (typeof Game !== 'undefined' && Game.gameState && Game.gameState.flags) {
+            Game.gameState.flags.combatTutorialSeen = true;
+        }
+    },
+    _getHelpBtnRect(w) { return { x: 12, y: 12, w: 44, h: 44 }; },
+
     start(playerTeam, cpuTeam, canvasW, canvasH, stageId) {
         this.active = true;
         this._w = canvasW;
         this._h = canvasH;
         this._stageId = stageId || 'villaggio';
         this._ensureBgLoaded();
+
+        // First-time tutorial
+        const flags = (typeof Game !== 'undefined' && Game.gameState && Game.gameState.flags) || {};
+        if (!flags.combatTutorialSeen) this._openTutorial();
 
         // Deep copy teams so we don't mutate originals
         this.playerTeam = playerTeam.map(c => ({...c, currentHp: c.maxHp, usedOneshot: false}));
@@ -935,6 +968,114 @@ const Combat = {
         if (this.phase !== 'unit_select') {
             this._renderScore(ctx, w);
         }
+
+        // Top-left help button (always present in combat)
+        this._renderHelpButton(ctx, w);
+
+        // Tutorial overlay on top of everything
+        if (this._tutorial.show) this._renderTutorial(ctx, w, h);
+    },
+
+    _renderHelpButton(ctx, w) {
+        const r = this._getHelpBtnRect(w);
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, r.x, r.y, r.w, r.h, 12);
+        ctx.stroke();
+        UI.text(ctx, '?', r.x + r.w / 2, r.y + r.h / 2 + 9, {
+            color: '#fff', size: 26, bold: true, align: 'center'
+        });
+        ctx.restore();
+    },
+
+    _renderTutorial(ctx, w, h) {
+        // Dimmed backdrop
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, w, h);
+
+        const slide = this.TUTORIAL_SLIDES[this._tutorial.step] || { title: '', body: '' };
+        const total = this.TUTORIAL_SLIDES.length;
+
+        const boxW = Math.min(w - 40, 560);
+        const boxH = 360;
+        const boxX = (w - boxW) / 2;
+        const boxY = (h - boxH) / 2;
+
+        ctx.fillStyle = 'rgba(20,25,55,0.97)';
+        UI.roundRect(ctx, boxX, boxY, boxW, boxH, 18);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200,220,255,0.7)';
+        ctx.lineWidth = 3;
+        UI.roundRect(ctx, boxX, boxY, boxW, boxH, 18);
+        ctx.stroke();
+
+        // Step counter pill
+        const pill = `${this._tutorial.step + 1} / ${total}`;
+        ctx.font = 'bold 14px Nunito, sans-serif';
+        const pillW = ctx.measureText(pill).width + 22;
+        ctx.fillStyle = 'rgba(60,100,180,0.95)';
+        UI.roundRect(ctx, boxX + 20, boxY - 16, pillW, 30, 10);
+        ctx.fill();
+        UI.text(ctx, pill, boxX + 20 + pillW / 2, boxY + 4, {
+            color: '#fff', size: 14, bold: true, align: 'center'
+        });
+
+        // Title
+        UI.text(ctx, slide.title, boxX + boxW / 2, boxY + 60, {
+            color: '#ffcc44', size: 28, bold: true, align: 'center'
+        });
+
+        // Body — wrapped, supports \n
+        ctx.fillStyle = '#e8e8f0';
+        ctx.font = '20px Nunito, sans-serif';
+        ctx.textAlign = 'left';
+        const lines = (slide.body || '').split('\n');
+        let cy = boxY + 110;
+        const maxW = boxW - 60;
+        for (const para of lines) {
+            const words = para.split(' ');
+            let line = '';
+            for (const word of words) {
+                const test = line ? line + ' ' + word : word;
+                if (ctx.measureText(test).width > maxW && line) {
+                    ctx.fillText(line, boxX + 30, cy);
+                    line = word;
+                    cy += 28;
+                } else {
+                    line = test;
+                }
+            }
+            if (line) { ctx.fillText(line, boxX + 30, cy); cy += 28; }
+            cy += 4;
+        }
+
+        // Advance button
+        const btnW = 220, btnH = 58;
+        const btnX = boxX + boxW / 2 - btnW / 2;
+        const btnY = boxY + boxH - btnH - 24;
+        const isLast = this._tutorial.step >= total - 1;
+        ctx.fillStyle = 'rgba(60,120,200,0.95)';
+        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 14);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200,220,255,0.85)';
+        ctx.lineWidth = 2;
+        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 14);
+        ctx.stroke();
+        UI.text(ctx, isLast ? 'INIZIA' : 'AVANTI ▶', btnX + btnW / 2, btnY + btnH / 2 + 8, {
+            color: '#fff', size: 22, bold: true, align: 'center'
+        });
+    },
+
+    _getTutorialBtnRect(w, h) {
+        const boxW = Math.min(w - 40, 560);
+        const boxH = 360;
+        const boxX = (w - boxW) / 2;
+        const boxY = (h - boxH) / 2;
+        return { x: boxX + boxW / 2 - 110, y: boxY + boxH - 82, w: 220, h: 58 };
     },
 
     // ─── RENDER: UNIT SELECT ───
@@ -1650,37 +1791,60 @@ const Combat = {
         const playerX = w * 0.25;
         const cpuX = w * 0.75;
         const creatureY = h * 0.42;
-        const barW = 130;
-        const barH = 12;
+        const barW = 160;
+        const barH = 14;
         const offsetY = 150; // above the 256-px tall creature sprite
 
         // Player
-        this._drawMiniHPBar(ctx, playerX, creatureY - offsetY, barW, barH, this.playerCreature);
+        this._drawMiniHPBar(ctx, playerX, creatureY - offsetY, barW, barH, this.playerCreature, 'PLAYER');
         // CPU
-        this._drawMiniHPBar(ctx, cpuX, creatureY - offsetY, barW, barH, this.cpuCreature);
+        this._drawMiniHPBar(ctx, cpuX, creatureY - offsetY, barW, barH, this.cpuCreature, 'CPU');
     },
 
-    _drawMiniHPBar(ctx, cx, y, barW, barH, creature) {
+    _drawMiniHPBar(ctx, cx, y, barW, barH, creature, sideLabel) {
         const x = cx - barW / 2;
         const ratio = Math.max(0, Math.min(1, creature.currentHp / creature.maxHp));
-        // Name
-        UI.textOutline(ctx, creature.creatureName, cx, y - 8, {
-            color: '#fff', size: 15, bold: true, align: 'center'
+
+        // Side label (PLAYER / CPU) — small pill above the name
+        if (sideLabel) {
+            ctx.save();
+            ctx.font = 'bold 14px Nunito, sans-serif';
+            const tagW = ctx.measureText(sideLabel).width + 18;
+            const tagH = 20;
+            const tagX = cx - tagW / 2;
+            const tagY = y - 52;
+            ctx.fillStyle = sideLabel === 'PLAYER' ? 'rgba(60,180,110,0.95)' : 'rgba(200,70,70,0.95)';
+            UI.roundRect(ctx, tagX, tagY, tagW, tagH, 10);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 1.5;
+            UI.roundRect(ctx, tagX, tagY, tagW, tagH, 10);
+            ctx.stroke();
+            UI.text(ctx, sideLabel, cx, tagY + 15, {
+                color: '#fff', size: 13, bold: true, align: 'center'
+            });
+            ctx.restore();
+        }
+
+        // Creature name
+        UI.textOutline(ctx, creature.creatureName, cx, y - 10, {
+            color: '#fff', size: 18, bold: true, align: 'center'
         });
         // Bar (reuse UI.drawHPBar if available, else fallback)
         if (UI.drawHPBar) {
             UI.drawHPBar(ctx, x, y, barW, barH, ratio);
         } else {
             ctx.fillStyle = '#222';
-            UI.roundRect(ctx, x, y, barW, barH, 4);
+            UI.roundRect(ctx, x, y, barW, barH, 5);
             ctx.fill();
             ctx.fillStyle = ratio > 0.5 ? '#44dd66' : ratio > 0.25 ? '#ffaa33' : '#dd3333';
-            UI.roundRect(ctx, x, y, barW * ratio, barH, 4);
+            UI.roundRect(ctx, x, y, barW * ratio, barH, 5);
             ctx.fill();
         }
-        // HP number
-        UI.textOutline(ctx, `${creature.currentHp}/${creature.maxHp}`, cx, y + barH + 12, {
-            color: '#eee', size: 12, bold: true, align: 'center'
+        // HP number — readable on mobile (was 12, now 22)
+        UI.textOutline(ctx, `${creature.currentHp}/${creature.maxHp}`, cx, y + barH + 22, {
+            color: '#fff', size: 22, bold: true, align: 'center',
+            outlineColor: '#000', outlineWidth: 4
         });
     },
 
@@ -1728,7 +1892,7 @@ const Combat = {
 
         // Title
         UI.text(ctx, 'AZIONE', w / 2, h * 0.58, {
-            color: '#ffcc00', size: 26, bold: true, align: 'center'
+            color: '#ffcc00', size: 32, bold: true, align: 'center'
         });
 
         // Element matchup hint
@@ -1739,15 +1903,15 @@ const Combat = {
             else if (atkEl && atkEl.weak === this.cpuCreature.element) { hintText = 'Poco efficace...'; hintColor = '#ff8844'; }
             if (hintText) {
                 UI.text(ctx, hintText, w / 2, h * 0.62, {
-                    color: hintColor, size: 15, bold: true, align: 'center'
+                    color: hintColor, size: 18, bold: true, align: 'center'
                 });
             }
         }
 
-        // Cards: 3 stacked buttons
+        // Cards: 3 stacked buttons — taller so the 26px label breathes
         const cardW = w - 60;
-        const cardH = 64;
-        const gap = 12;
+        const cardH = 84;
+        const gap = 14;
         const startY = h * 0.66;
         const startX = 30;
 
@@ -1761,25 +1925,26 @@ const Combat = {
             ctx.fillStyle = !available ? 'rgba(40,40,60,0.5)'
                           : selected ? 'rgba(160,160,255,0.25)'
                           : 'rgba(20,20,50,0.75)';
-            UI.roundRect(ctx, startX, y, cardW, cardH, 14);
+            UI.roundRect(ctx, startX, y, cardW, cardH, 16);
             ctx.fill();
             ctx.strokeStyle = selected ? a.color : 'rgba(255,255,255,0.2)';
             ctx.lineWidth = selected ? 3 : 1.5;
-            UI.roundRect(ctx, startX, y, cardW, cardH, 14);
+            UI.roundRect(ctx, startX, y, cardW, cardH, 16);
             ctx.stroke();
 
-            // Icon
-            ctx.font = '28px Nunito, sans-serif';
+            // Icon — stays anchored on the left so it still reads as a button affordance
+            ctx.font = '38px Nunito, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(a.icon, startX + 36, y + 42);
+            ctx.fillText(a.icon, startX + 46, y + cardH / 2 + 12);
 
-            // Label + hint
-            UI.text(ctx, a.label + (available ? '' : '  (usato)'), startX + 72, y + 26, {
-                color: available ? '#fff' : '#888', size: 18, bold: true
+            // Label + hint centered in the remaining space (to the right of icon)
+            const textMidX = startX + 96 + (cardW - 120) / 2;
+            UI.text(ctx, a.label + (available ? '' : '  (usato)'), textMidX, y + (a.hint && available ? cardH / 2 - 4 : cardH / 2 + 8), {
+                color: available ? '#fff' : '#888', size: 26, bold: true, align: 'center'
             });
             if (a.hint && available) {
-                UI.text(ctx, a.hint(this.playerCreature), startX + 72, y + 48, {
-                    color: '#bbb', size: 13
+                UI.text(ctx, a.hint(this.playerCreature), textMidX, y + cardH / 2 + 22, {
+                    color: '#bbb', size: 16, align: 'center'
                 });
             }
         }
