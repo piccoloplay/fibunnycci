@@ -58,6 +58,10 @@ const Touch = {
         canvas.addEventListener('mousedown', e => {
             if (Audio.unlock) Audio.unlock();
             const pos = this._getMousePos(e);
+            if (this._joystickContains(pos)) {
+                this._joystickStart(pos);
+                return;
+            }
             this._holding = true;
             this._holdX = pos.x;
             this._holdY = pos.y;
@@ -68,14 +72,19 @@ const Touch = {
             this._handleTap(pos);
         });
         canvas.addEventListener('mousemove', e => {
+            const pos = this._getMousePos(e);
+            if (this._joy.active) {
+                this._joystickMove(pos);
+                return;
+            }
             if (this._holding) {
-                const pos = this._getMousePos(e);
                 this._holdX = pos.x;
                 this._holdY = pos.y;
                 if (this._sliderDrag && Debug.active) this._updateSliderFromPos(pos);
             }
         });
         canvas.addEventListener('mouseup', e => {
+            if (this._joy.active) this._joystickEnd();
             this._holding = false;
             this._sliderDrag = null;
         });
@@ -109,6 +118,10 @@ const Touch = {
         e.preventDefault();
         if (Audio.unlock) Audio.unlock();
         const pos = this._getCanvasPos(e.touches[0]);
+        if (this._joystickContains(pos)) {
+            this._joystickStart(pos);
+            return;
+        }
         this._holding = true;
         this._holdX = pos.x;
         this._holdY = pos.y;
@@ -121,8 +134,12 @@ const Touch = {
 
     _onTouchMove(e) {
         e.preventDefault();
+        const pos = this._getCanvasPos(e.touches[0]);
+        if (this._joy.active) {
+            this._joystickMove(pos);
+            return;
+        }
         if (this._holding) {
-            const pos = this._getCanvasPos(e.touches[0]);
             this._holdX = pos.x;
             this._holdY = pos.y;
             if (this._sliderDrag && Debug.active) this._updateSliderFromPos(pos);
@@ -131,6 +148,7 @@ const Touch = {
 
     _onTouchEnd(e) {
         e.preventDefault();
+        if (this._joy.active) this._joystickEnd();
         this._holding = false;
         this._sliderDrag = null;
     },
@@ -688,5 +706,127 @@ const Touch = {
         ctx.beginPath();
         ctx.arc(tx, ty, 8, 0, Math.PI * 2);
         ctx.stroke();
+    },
+
+    // ─── VIRTUAL JOYSTICK (8-direction, bottom-left, overworld only) ───
+    _joy: {
+        active: false,
+        baseX: 0, baseY: 0,
+        baseR: 80,          // visual radius of the base
+        hitR: 130,          // hit-test radius (generous so fat fingers work)
+        thumbX: 0, thumbY: 0,
+        deadZone: 0.22      // fraction of baseR below which no direction is issued
+    },
+
+    _layoutJoystick(w, h) {
+        this._joy.baseX = 140;
+        this._joy.baseY = h - 260; // above the nav bar (100px tall at bottom)
+        if (this._joy.thumbX === 0 && this._joy.thumbY === 0) {
+            this._joy.thumbX = this._joy.baseX;
+            this._joy.thumbY = this._joy.baseY;
+        }
+    },
+
+    _joystickContains(pos) {
+        if (Game.state !== 'overworld') return false;
+        this._layoutJoystick(this._canvas.width, this._canvas.height);
+        const dx = pos.x - this._joy.baseX;
+        const dy = pos.y - this._joy.baseY;
+        return (dx * dx + dy * dy) <= this._joy.hitR * this._joy.hitR;
+    },
+
+    _joystickStart(pos) {
+        this._joy.active = true;
+        this.cancelPath(); // any in-flight tap-path is overridden by the stick
+        this._joystickMove(pos);
+    },
+
+    _joystickMove(pos) {
+        const dx = pos.x - this._joy.baseX;
+        const dy = pos.y - this._joy.baseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxR = this._joy.baseR;
+        if (dist > maxR) {
+            this._joy.thumbX = this._joy.baseX + (dx / dist) * maxR;
+            this._joy.thumbY = this._joy.baseY + (dy / dist) * maxR;
+        } else {
+            this._joy.thumbX = pos.x;
+            this._joy.thumbY = pos.y;
+        }
+        this._applyJoystickInput();
+    },
+
+    _applyJoystickInput() {
+        // Clear arrows first — we rebuild them each frame based on thumb position.
+        Input.keys['ArrowUp']    = false;
+        Input.keys['ArrowDown']  = false;
+        Input.keys['ArrowLeft']  = false;
+        Input.keys['ArrowRight'] = false;
+
+        const dx = this._joy.thumbX - this._joy.baseX;
+        const dy = this._joy.thumbY - this._joy.baseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < this._joy.baseR * this._joy.deadZone) return;
+
+        // atan2 in screen space: 0 = right, +pi/2 = down, +/-pi = left, -pi/2 = up.
+        // Bucket into 8 sectors of 45° each.
+        const deg = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+        if (deg >= 337.5 || deg < 22.5)        { Input.keys['ArrowRight'] = true; }
+        else if (deg < 67.5)                   { Input.keys['ArrowRight'] = true; Input.keys['ArrowDown'] = true; }
+        else if (deg < 112.5)                  { Input.keys['ArrowDown']  = true; }
+        else if (deg < 157.5)                  { Input.keys['ArrowLeft']  = true; Input.keys['ArrowDown'] = true; }
+        else if (deg < 202.5)                  { Input.keys['ArrowLeft']  = true; }
+        else if (deg < 247.5)                  { Input.keys['ArrowLeft']  = true; Input.keys['ArrowUp']   = true; }
+        else if (deg < 292.5)                  { Input.keys['ArrowUp']    = true; }
+        else                                   { Input.keys['ArrowRight'] = true; Input.keys['ArrowUp']   = true; }
+    },
+
+    _joystickEnd() {
+        this._joy.active = false;
+        Input.keys['ArrowUp']    = false;
+        Input.keys['ArrowDown']  = false;
+        Input.keys['ArrowLeft']  = false;
+        Input.keys['ArrowRight'] = false;
+        // Snap thumb back to base center for the next frame's render
+        this._joy.thumbX = this._joy.baseX;
+        this._joy.thumbY = this._joy.baseY;
+    },
+
+    renderOverlay(ctx, w, h) {
+        if (Game.state !== 'overworld') return;
+        this._layoutJoystick(w, h);
+        const j = this._joy;
+        ctx.save();
+        // Base
+        ctx.globalAlpha = j.active ? 0.85 : 0.45;
+        ctx.fillStyle = 'rgba(15,15,35,0.55)';
+        ctx.beginPath();
+        ctx.arc(j.baseX, j.baseY, j.baseR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(200,210,255,0.65)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // Cardinal tick marks (purely decorative, hints 8-way)
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const rx = Math.cos(a), ry = Math.sin(a);
+            ctx.beginPath();
+            ctx.moveTo(j.baseX + rx * (j.baseR - 10), j.baseY + ry * (j.baseR - 10));
+            ctx.lineTo(j.baseX + rx * (j.baseR - 2),  j.baseY + ry * (j.baseR - 2));
+            ctx.stroke();
+        }
+        // Thumb
+        const thumbR = 34;
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = j.active ? 'rgba(150,180,255,0.95)' : 'rgba(200,210,255,0.55)';
+        ctx.beginPath();
+        ctx.arc(j.thumbX || j.baseX, j.thumbY || j.baseY, thumbR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
     }
 };

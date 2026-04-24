@@ -598,6 +598,9 @@ const Game = {
         // HUD
         this._renderHUD(ctx, w, h);
 
+        // Virtual joystick (screen space, above HUD)
+        if (this.state === 'overworld') Touch.renderOverlay(ctx, w, h);
+
         // Overlays
         if (this.state === 'dialogue') Dialogue.render(ctx, w, h);
         if (this.state === 'menu') Menu.render(ctx, w, h);
