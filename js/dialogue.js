@@ -24,6 +24,8 @@ const Dialogue = {
         this.npcName = dialogueData.name;
         this.npcColor = dialogueData.color;
         this.npcId = dialogueData.npcId || '';
+        this.npcDx = dialogueData.npcDx || 0;
+        this.npcDy = dialogueData.npcDy || 0;
         this.lines = dialogueData.lines;
         this.currentLine = 0;
         this.animTimer = 0;
@@ -104,14 +106,38 @@ const Dialogue = {
     },
 
     // ─── NORMAL DIALOGUE (textbox over overworld) ───
+    // Player is always centered on screen (camera has no clamp), so the
+    // speech bubble positions relative to him:
+    //  - NPC is SOUTH of the player (npcDy > 0)  -> box ABOVE the player
+    //  - otherwise                               -> box BELOW the player
+    // A small triangular tail points toward the player (and therefore
+    // toward the speaker on the far side).
     _renderNormal(ctx, w, h) {
         const boxH = 180;
-        // Stick just above the 100 px bottom nav bar — clear separation.
-        const boxY = h - boxH - 110;
-        const boxX = 24;
-        const boxW = w - 48;
+        const boxW = Math.min(w - 40, Math.round(w * 0.86));
+        const boxX = Math.round((w - boxW) / 2);
+        const gap = 64; // clearance between player sprite and box edge
+        const boxBelow = !(this.npcDy > 0);
+        const boxY = boxBelow
+            ? Math.round(h / 2 + gap)
+            : Math.round(h / 2 - gap - boxH);
+        const tailSize = 18;
+        const tailBaseY = boxBelow ? boxY : boxY + boxH;
+        const tailTipY  = boxBelow ? boxY - tailSize : boxY + boxH + tailSize;
+        const tailX     = w / 2;
 
-        // Semi-transparent background
+        // Fill tail FIRST, same color as the box interior, so the box
+        // rect drawn on top hides the tail's base line.
+        const fillColor = 'rgba(10,10,40,0.96)';
+        ctx.fillStyle = fillColor;
+        ctx.beginPath();
+        ctx.moveTo(tailX - tailSize, tailBaseY);
+        ctx.lineTo(tailX + tailSize, tailBaseY);
+        ctx.lineTo(tailX,             tailTipY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Box fill (gradient) — covers the tail's base
         const grad = ctx.createLinearGradient(0, boxY, 0, boxY + boxH);
         grad.addColorStop(0, 'rgba(10,10,40,0.93)');
         grad.addColorStop(1, 'rgba(10,10,40,0.97)');
@@ -119,21 +145,27 @@ const Dialogue = {
         UI.roundRect(ctx, boxX, boxY, boxW, boxH, 16);
         ctx.fill();
 
-        // Border
+        // Box outline
         ctx.strokeStyle = this.npcColor;
-        ctx.globalAlpha = 0.5;
+        ctx.globalAlpha = 0.55;
         ctx.lineWidth = 2.5;
         UI.roundRect(ctx, boxX, boxY, boxW, boxH, 16);
         ctx.stroke();
+
+        // Tail outline: only the two sloped sides (base is hidden by the box)
+        ctx.beginPath();
+        ctx.moveTo(tailX - tailSize, tailBaseY);
+        ctx.lineTo(tailX,             tailTipY);
+        ctx.lineTo(tailX + tailSize, tailBaseY);
+        ctx.stroke();
         ctx.globalAlpha = 1;
 
-        // Name tag
+        // Name tag — always on the top of the box
         ctx.font = UI.fontBold(18);
         const nameW = ctx.measureText(this.npcName).width + 30;
         ctx.fillStyle = this.npcColor;
         UI.roundRect(ctx, boxX + 16, boxY - 18, Math.max(nameW, 80), 34, 10);
         ctx.fill();
-
         UI.text(ctx, this.npcName, boxX + 30, boxY + 6, {
             color: '#fff', size: 18, bold: true
         });

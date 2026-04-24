@@ -396,6 +396,11 @@ const Game = {
         Touch.cancelPath();
         Audio.play('npcTalk');
         const dialogueData = NPC.interact(npc);
+        // Give the dialog box the relative position of the NPC so it can
+        // place itself on the opposite side of the player and point its
+        // speech-bubble tail toward the speaker.
+        dialogueData.npcDx = npc.gridX - Player.gridX;
+        dialogueData.npcDy = npc.gridY - Player.gridY;
         Dialogue.start(dialogueData);
         this.state = 'dialogue';
         if (npc.triggerCombat) {
