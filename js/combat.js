@@ -205,9 +205,8 @@ const Combat = {
         this._stageId = stageId || 'villaggio';
         this._ensureBgLoaded();
 
-        // First-time tutorial
-        const flags = (typeof Game !== 'undefined' && Game.gameState && Game.gameState.flags) || {};
-        if (!flags.combatTutorialSeen) this._openTutorial();
+        // Tutorial is opt-in only (via the '?' button). No auto-show on match start.
+        this._tutorial = { show: false, step: 0 };
 
         // Deep copy teams so we don't mutate originals
         this.playerTeam = playerTeam.map(c => ({...c, currentHp: c.maxHp, usedOneshot: false}));
@@ -993,89 +992,77 @@ const Combat = {
     },
 
     _renderTutorial(ctx, w, h) {
-        // Dimmed backdrop
-        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        // Full-page opaque background — the user specifically asked for
+        // full screen, no padded box
+        ctx.fillStyle = 'rgba(12,14,30,0.98)';
         ctx.fillRect(0, 0, w, h);
 
         const slide = this.TUTORIAL_SLIDES[this._tutorial.step] || { title: '', body: '' };
         const total = this.TUTORIAL_SLIDES.length;
 
-        const boxW = Math.min(w - 40, 560);
-        const boxH = 360;
-        const boxX = (w - boxW) / 2;
-        const boxY = (h - boxH) / 2;
-
-        ctx.fillStyle = 'rgba(20,25,55,0.97)';
-        UI.roundRect(ctx, boxX, boxY, boxW, boxH, 18);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(200,220,255,0.7)';
-        ctx.lineWidth = 3;
-        UI.roundRect(ctx, boxX, boxY, boxW, boxH, 18);
-        ctx.stroke();
-
-        // Step counter pill
+        // Step counter pill top-center
         const pill = `${this._tutorial.step + 1} / ${total}`;
-        ctx.font = 'bold 14px Nunito, sans-serif';
-        const pillW = ctx.measureText(pill).width + 22;
+        ctx.font = 'bold 16px Nunito, sans-serif';
+        const pillW = ctx.measureText(pill).width + 28;
+        const pillH = 36;
+        const pillX = (w - pillW) / 2;
+        const pillY = 60;
         ctx.fillStyle = 'rgba(60,100,180,0.95)';
-        UI.roundRect(ctx, boxX + 20, boxY - 16, pillW, 30, 10);
+        UI.roundRect(ctx, pillX, pillY, pillW, pillH, 12);
         ctx.fill();
-        UI.text(ctx, pill, boxX + 20 + pillW / 2, boxY + 4, {
-            color: '#fff', size: 14, bold: true, align: 'center'
+        UI.text(ctx, pill, w / 2, pillY + 24, {
+            color: '#fff', size: 16, bold: true, align: 'center'
         });
 
         // Title
-        UI.text(ctx, slide.title, boxX + boxW / 2, boxY + 60, {
-            color: '#ffcc44', size: 28, bold: true, align: 'center'
+        UI.text(ctx, slide.title, w / 2, pillY + pillH + 80, {
+            color: '#ffcc44', size: 36, bold: true, align: 'center'
         });
 
         // Body — wrapped, supports \n
         ctx.fillStyle = '#e8e8f0';
-        ctx.font = '20px Nunito, sans-serif';
+        ctx.font = '22px Nunito, sans-serif';
         ctx.textAlign = 'left';
         const lines = (slide.body || '').split('\n');
-        let cy = boxY + 110;
-        const maxW = boxW - 60;
+        const maxW = w - 80;
+        let cy = pillY + pillH + 140;
         for (const para of lines) {
             const words = para.split(' ');
             let line = '';
             for (const word of words) {
                 const test = line ? line + ' ' + word : word;
                 if (ctx.measureText(test).width > maxW && line) {
-                    ctx.fillText(line, boxX + 30, cy);
+                    ctx.fillText(line, 40, cy);
                     line = word;
-                    cy += 28;
+                    cy += 32;
                 } else {
                     line = test;
                 }
             }
-            if (line) { ctx.fillText(line, boxX + 30, cy); cy += 28; }
-            cy += 4;
+            if (line) { ctx.fillText(line, 40, cy); cy += 32; }
+            cy += 8;
         }
 
-        // Advance button
-        const btnW = 220, btnH = 58;
-        const btnX = boxX + boxW / 2 - btnW / 2;
-        const btnY = boxY + boxH - btnH - 24;
+        // Advance button — fixed near the bottom
+        const btnW = 280, btnH = 72;
+        const btnX = (w - btnW) / 2;
+        const btnY = h - btnH - 80;
         const isLast = this._tutorial.step >= total - 1;
         ctx.fillStyle = 'rgba(60,120,200,0.95)';
-        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 14);
+        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 16);
         ctx.fill();
         ctx.strokeStyle = 'rgba(200,220,255,0.85)';
-        ctx.lineWidth = 2;
-        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 14);
+        ctx.lineWidth = 3;
+        UI.roundRect(ctx, btnX, btnY, btnW, btnH, 16);
         ctx.stroke();
-        UI.text(ctx, isLast ? 'INIZIA' : 'AVANTI ▶', btnX + btnW / 2, btnY + btnH / 2 + 8, {
-            color: '#fff', size: 22, bold: true, align: 'center'
+        UI.text(ctx, isLast ? 'CHIUDI' : 'AVANTI ▶', btnX + btnW / 2, btnY + btnH / 2 + 10, {
+            color: '#fff', size: 26, bold: true, align: 'center'
         });
     },
 
     _getTutorialBtnRect(w, h) {
-        const boxW = Math.min(w - 40, 560);
-        const boxH = 360;
-        const boxX = (w - boxW) / 2;
-        const boxY = (h - boxH) / 2;
-        return { x: boxX + boxW / 2 - 110, y: boxY + boxH - 82, w: 220, h: 58 };
+        const btnW = 280, btnH = 72;
+        return { x: (w - btnW) / 2, y: h - btnH - 80, w: btnW, h: btnH };
     },
 
     // ─── RENDER: UNIT SELECT ───
@@ -1791,21 +1778,19 @@ const Combat = {
         const playerX = w * 0.25;
         const cpuX = w * 0.75;
         const creatureY = h * 0.42;
-        const barW = 160;
-        const barH = 14;
-        const offsetY = 150; // above the 256-px tall creature sprite
+        const barW = 170;
+        const barH = 24;         // taller bar so the HP number fits inside
+        const offsetY = 165;     // above the 256-px tall creature sprite
 
-        // Player
         this._drawMiniHPBar(ctx, playerX, creatureY - offsetY, barW, barH, this.playerCreature, 'PLAYER');
-        // CPU
-        this._drawMiniHPBar(ctx, cpuX, creatureY - offsetY, barW, barH, this.cpuCreature, 'CPU');
+        this._drawMiniHPBar(ctx, cpuX,    creatureY - offsetY, barW, barH, this.cpuCreature,    'CPU');
     },
 
     _drawMiniHPBar(ctx, cx, y, barW, barH, creature, sideLabel) {
         const x = cx - barW / 2;
         const ratio = Math.max(0, Math.min(1, creature.currentHp / creature.maxHp));
 
-        // Side label (PLAYER / CPU) — small pill above the name
+        // PLAYER / CPU tag pill
         if (sideLabel) {
             ctx.save();
             ctx.font = 'bold 14px Nunito, sans-serif';
@@ -1834,17 +1819,17 @@ const Combat = {
         if (UI.drawHPBar) {
             UI.drawHPBar(ctx, x, y, barW, barH, ratio);
         } else {
-            ctx.fillStyle = '#222';
-            UI.roundRect(ctx, x, y, barW, barH, 5);
+            ctx.fillStyle = '#1a1a25';
+            UI.roundRect(ctx, x, y, barW, barH, 7);
             ctx.fill();
             ctx.fillStyle = ratio > 0.5 ? '#44dd66' : ratio > 0.25 ? '#ffaa33' : '#dd3333';
-            UI.roundRect(ctx, x, y, barW * ratio, barH, 5);
+            UI.roundRect(ctx, x, y, barW * ratio, barH, 7);
             ctx.fill();
         }
-        // HP number — readable on mobile (was 12, now 22)
-        UI.textOutline(ctx, `${creature.currentHp}/${creature.maxHp}`, cx, y + barH + 22, {
-            color: '#fff', size: 22, bold: true, align: 'center',
-            outlineColor: '#000', outlineWidth: 4
+        // HP number INSIDE the bar — always readable regardless of what's behind.
+        UI.textOutline(ctx, `${creature.currentHp}/${creature.maxHp}`, cx, y + barH - 5, {
+            color: '#fff', size: 16, bold: true, align: 'center',
+            outlineColor: '#000', outlineWidth: 3
         });
     },
 
@@ -1932,19 +1917,19 @@ const Combat = {
             UI.roundRect(ctx, startX, y, cardW, cardH, 16);
             ctx.stroke();
 
-            // Icon — stays anchored on the left so it still reads as a button affordance
+            // Icon — anchored left as button affordance
             ctx.font = '38px Nunito, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(a.icon, startX + 46, y + cardH / 2 + 12);
 
-            // Label + hint centered in the remaining space (to the right of icon)
-            const textMidX = startX + 96 + (cardW - 120) / 2;
-            UI.text(ctx, a.label + (available ? '' : '  (usato)'), textMidX, y + (a.hint && available ? cardH / 2 - 4 : cardH / 2 + 8), {
-                color: available ? '#fff' : '#888', size: 26, bold: true, align: 'center'
+            // Label + hint left-aligned next to the icon (reverted from centered:
+            // centered labels + long hints read worse on mobile)
+            UI.text(ctx, a.label + (available ? '' : '  (usato)'), startX + 92, y + (a.hint && available ? cardH / 2 - 2 : cardH / 2 + 8), {
+                color: available ? '#fff' : '#888', size: 24, bold: true
             });
             if (a.hint && available) {
-                UI.text(ctx, a.hint(this.playerCreature), textMidX, y + cardH / 2 + 22, {
-                    color: '#bbb', size: 16, align: 'center'
+                UI.text(ctx, a.hint(this.playerCreature), startX + 92, y + cardH / 2 + 22, {
+                    color: '#bbb', size: 15
                 });
             }
         }

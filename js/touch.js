@@ -303,17 +303,13 @@ const Touch = {
         const w = this._canvas.width;
         const h = this._canvas.height;
 
-        // Tutorial overlay intercepts everything while shown
+        // Tutorial overlay intercepts everything while shown — any tap
+        // advances, tap on the last slide closes.
         if (Combat._tutorial && Combat._tutorial.show) {
-            const br = Combat._getTutorialBtnRect(w, h);
-            const onBtn = pos.x >= br.x && pos.x <= br.x + br.w &&
-                          pos.y >= br.y && pos.y <= br.y + br.h;
-            // Advance on button tap OR any tap outside the button (tap-through
-            // pattern from most mobile tutorials)
             const total = Combat.TUTORIAL_SLIDES.length;
             if (Combat._tutorial.step >= total - 1) {
                 Combat._closeTutorial();
-            } else if (onBtn || true) {
+            } else {
                 Combat._tutorial.step++;
             }
             return;
