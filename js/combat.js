@@ -22,6 +22,7 @@ const Combat = {
     playerMorraWins: 0,
     cpuMorraWins: 0,
     turnHistory: [], // Winner of each non-draw turn in the current round: 1=player, 2=cpu
+    roundMoveHistory: [], // Array of {p: choiceIdx, c: choiceIdx} for each non-draw turn this round (mindgame readout)
 
     // Turn state
     playerChoice: -1,   // 0=carta, 1=sasso, 2=forbice
@@ -215,6 +216,7 @@ const Combat = {
         this.playerRoundWins = 0;
         this.cpuRoundWins = 0;
         this.turnHistory = [];
+        this.roundMoveHistory = [];
 
         this.phase = 'unit_select';
         this.selectIndex = -1; // Nothing pre-selected
@@ -328,6 +330,7 @@ const Combat = {
                 this.playerMorraWins = 0;
                 this.cpuMorraWins = 0;
                 this.turnHistory = [];
+                this.roundMoveHistory = [];
             });
             this.phase = 'tap_to_play';
             this.phaseTimer = 0;
@@ -754,12 +757,14 @@ const Combat = {
             this.playerMorraWins++;
             this.currentTurn++;
             this.turnHistory.push(1);
+            this.roundMoveHistory.push({ p, c });
             this._applyDamage(this.playerCreature, this.cpuCreature);
         } else {
             this.morraWinner = 2;
             this.cpuMorraWins++;
             this.currentTurn++;
             this.turnHistory.push(2);
+            this.roundMoveHistory.push({ p, c });
             this._applyDamage(this.cpuCreature, this.playerCreature);
         }
     },
@@ -2147,6 +2152,71 @@ const Combat = {
         }
 
         ctx.textAlign = 'left';
+
+        // Move-history columns (mindgame readout) — only on the morra screen
+        this._renderMoveHistoryColumns(ctx, w, h);
+    },
+
+    // Two compact columns flanking the screen below the morra buttons,
+    // showing the player's and CPU's last 3 moves of the current round.
+    // Most-recent at the bottom; the bottom cell is highlighted.
+    _renderMoveHistoryColumns(ctx, w, h) {
+        const ICONS = ['📄', '🪨', '✂️']; // 0=carta, 1=sasso, 2=forbice
+        const cellSize = 72;
+        const cellGap = 10;
+        const colTop = Math.round(h * 0.79);
+        const leftX  = 36;
+        const rightX = w - 36 - cellSize;
+
+        const history = this.roundMoveHistory || [];
+        const last3 = history.slice(-3);
+        // Pad at the start so the most recent always sits in the bottom cell.
+        const padded = [];
+        for (let i = 0; i < 3 - last3.length; i++) padded.push(null);
+        for (const e of last3) padded.push(e);
+
+        // Headers
+        UI.text(ctx, 'TUE', leftX + cellSize / 2, colTop - 10, {
+            color: '#88ccff', size: 14, bold: true, align: 'center'
+        });
+        UI.text(ctx, 'CPU', rightX + cellSize / 2, colTop - 10, {
+            color: '#ff9999', size: 14, bold: true, align: 'center'
+        });
+
+        for (let i = 0; i < 3; i++) {
+            const entry = padded[i];
+            const cy = colTop + i * (cellSize + cellGap);
+            const isLatest = (i === 2) && !!entry;
+            this._drawHistoryCell(ctx, leftX,  cy, cellSize, entry ? ICONS[entry.p] : null, isLatest, '#88ccff');
+            this._drawHistoryCell(ctx, rightX, cy, cellSize, entry ? ICONS[entry.c] : null, isLatest, '#ff9999');
+        }
+    },
+
+    _drawHistoryCell(ctx, x, y, size, iconChar, isLatest, accent) {
+        const filled = !!iconChar;
+        ctx.fillStyle = filled ? 'rgba(15,20,40,0.78)' : 'rgba(15,20,40,0.35)';
+        UI.roundRect(ctx, x, y, size, size, 12);
+        ctx.fill();
+        if (isLatest) {
+            ctx.strokeStyle = accent;
+            ctx.lineWidth = 3;
+        } else {
+            ctx.strokeStyle = filled ? 'rgba(200,210,255,0.45)' : 'rgba(200,210,255,0.15)';
+            ctx.lineWidth = 1.5;
+        }
+        UI.roundRect(ctx, x, y, size, size, 12);
+        ctx.stroke();
+        if (filled) {
+            ctx.font = '40px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(iconChar, x + size / 2, y + size / 2 + 14);
+        } else {
+            ctx.font = '24px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(200,210,255,0.25)';
+            ctx.fillText('—', x + size / 2, y + size / 2 + 8);
+        }
     },
 
     _easeOutBack(t) {
