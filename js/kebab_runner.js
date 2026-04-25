@@ -137,7 +137,9 @@ const KebabRunner = {
         const hitBot = playerY + 44;
         for (let i = this.objects.length - 1; i >= 0; i--) {
             const o = this.objects[i];
-            const screenY = o.spawnY - this.scrollY + this._h * 0.05;
+            // Objects spawn ~120 px ABOVE the screen and move DOWN as
+            // scrollY grows past their spawnY. Sign was inverted in v1.
+            const screenY = -120 + (this.scrollY - o.spawnY);
             // Cull below screen
             if (screenY > this._h + 80) {
                 this.objects.splice(i, 1);
@@ -364,7 +366,7 @@ const KebabRunner = {
     _renderObjects(ctx, w, h) {
         const laneW = w / 3;
         for (const o of this.objects) {
-            const screenY = o.spawnY - this.scrollY + h * 0.05;
+            const screenY = -120 + (this.scrollY - o.spawnY);
             if (screenY < -80 || screenY > h + 80) continue;
             const cx = laneW / 2 + (o.lane + 1) * laneW;
             const cy = screenY;
