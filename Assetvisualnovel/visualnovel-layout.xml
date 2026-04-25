@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Specifica di layout per la Visual Novel di "Kebab Runner".
+  Generata il 2026-04-25 a partire dallo screenshot della scena VN
+  (Chapter 7 / Fibunnycci attacks) e dall'array "Copione" (53 elementi).
+  Da usare come guida per il porting webapp (HTML/CSS o canvas).
+-->
+<visualNovel name="KebabRunnerVN" target="webapp" orientation="portrait">
+
+  <!-- ============================================================== -->
+  <!-- 1. CANVAS / ROOT                                               -->
+  <!-- ============================================================== -->
+  <canvas aspect="9:16" referenceWidth="360" referenceHeight="640">
+    <background color="#0b0d10" note="cornice scura attorno alla scena"/>
+    <safeArea inset="8px"/>
+  </canvas>
+
+  <!-- ============================================================== -->
+  <!-- 2. STRUTTURA A LIVELLI (z-index crescente = piu' in alto)      -->
+  <!-- ============================================================== -->
+  <layers>
+
+    <!-- 2.1 Header capitolo ------------------------------------------ -->
+    <layer id="chapterHeader" zIndex="10" anchor="top-center">
+      <position top="12px"/>
+      <element type="pill" id="chapterBadge">
+        <style background="#1c1c1c" border="2px solid #c9d3d6"
+               radius="22px" paddingX="22px" paddingY="6px"/>
+        <text font="Bowlby One / display" size="18px" color="#e8edee"
+              content="{currentChapter}" example="Chapter7"/>
+      </element>
+    </layer>
+
+    <!-- 2.2 Barra "TAP THE SCREEN" ------------------------------------ -->
+    <layer id="tapBar" zIndex="9" anchor="top-center">
+      <position top="56px"/>
+      <element type="banner" id="tapHint">
+        <leftDecoration type="halftoneDots" color="#e8edee"/>
+        <rightLabel background="#3a3f44" color="#e8edee"
+                    paddingX="12px" paddingY="4px" radius="4px"
+                    text="TAP THE SCREEN"/>
+        <behavior>blink slow (opacita' 0.6 -&gt; 1.0, 1.2s) finche' attesa input</behavior>
+      </element>
+    </layer>
+
+    <!-- 2.3 Sfondo scena (immagine personaggio + ambient) ------------- -->
+    <layer id="scene" zIndex="1" anchor="center">
+      <element type="image" id="characterArt"
+               src="characters/{currentSpeaker}/{pose}.png"
+               example="characters/fibunnycci/attack.png"
+               fit="cover"/>
+      <element type="image" id="backdrop"
+               src="backgrounds/{currentBackdrop}.png"
+               example="backgrounds/cosmic_columns.png"
+               fit="cover" zIndex="0"/>
+      <transition type="crossfade" durationMs="250"/>
+    </layer>
+
+    <!-- 2.4 Effetti / overlay (lampi, X di attacco, ecc.) ------------- -->
+    <layer id="effects" zIndex="5">
+      <element type="sprite" id="actionMark" src="ui/x_attack.png"
+               anchor="center-right" trigger="onAction"/>
+    </layer>
+
+    <!-- 2.5 Box dialogo ----------------------------------------------- -->
+    <layer id="dialogBox" zIndex="20" anchor="bottom-center">
+      <position bottom="120px" widthPct="92"/>
+      <element type="nameTag" id="speakerTag">
+        <style background="#1c2a36" color="#e8edee"
+               paddingX="10px" paddingY="3px"
+               font="display" size="12px"/>
+        <text content="{currentSpeaker.upper}" example="PICCOLOPLAY"/>
+      </element>
+      <element type="textPanel" id="lineBox">
+        <style background="#000000cc" color="#ffffff"
+               paddingX="14px" paddingY="14px" minHeight="80px"
+               font="sans-serif" size="20px" lineHeight="1.25"/>
+        <text content="{currentLine}" example="Fibunnycci attacks"/>
+        <typewriter speedCharsPerSec="35" allowSkipOnTap="true"/>
+      </element>
+      <element type="button" id="nextHint"
+               sprite="ui/next_arrow.png"
+               anchor="bottom-right" offset="-8px,-8px"
+               note="quadrato vuoto sotto al box (placeholder freccia next)"/>
+    </layer>
+
+    <!-- 2.6 Bottoni di sistema ---------------------------------------- -->
+    <layer id="systemUi" zIndex="30">
+      <element type="button" id="skipButton" anchor="bottom-left"
+               position="x=16px,y=72px">
+        <style background="#1c1c1c" border="2px solid #c9d3d6"
+               radius="20px" paddingX="22px" paddingY="6px"/>
+        <text content="SKIP"/>
+        <onClick action="advanceToNextChapter | endDialog"/>
+      </element>
+      <element type="footer" id="exitHint" anchor="bottom-center"
+               position="bottom=0">
+        <style background="#000000" color="#ffffff" height="40px"
+               font="display" size="14px"/>
+        <text content="Swipe Up to Exit"/>
+        <gesture type="swipe-up" action="exitToHome"/>
+      </element>
+    </layer>
+
+  </layers>
+
+  <!-- ============================================================== -->
+  <!-- 3. CONTROLLI / INPUT                                           -->
+  <!-- ============================================================== -->
+  <inputs>
+    <input gesture="tap-anywhere"  action="advanceLine"/>
+    <input gesture="swipe-up"      action="exitToHome"/>
+    <input button="SKIP"           action="skipScene"/>
+    <input gesture="tap-while-typewriting" action="completeCurrentLine"/>
+  </inputs>
+
+  <!-- ============================================================== -->
+  <!-- 4. STATE MACHINE DEL DIALOGO                                   -->
+  <!-- ============================================================== -->
+  <state>
+    <field name="copione"        type="string[]" desc="array di linee (vedi dialogo Cap.7 = 53 elementi)"/>
+    <field name="lineIndex"      type="int"      default="0"/>
+    <field name="currentSpeaker" type="string"   desc="es. PICCOLOPLAY, CTHULHU, NARRATOR"/>
+    <field name="finisched"      type="bool"     desc="true quando lineIndex == copione.length-1"/>
+  </state>
+
+  <!-- ============================================================== -->
+  <!-- 5. SCHEMA LINEA (per future migrazioni a JSON ricco)           -->
+  <!-- ============================================================== -->
+  <lineSchema>
+    <!-- Oggi e' solo string. Si consiglia di evolvere a: -->
+    <field name="text"     type="string"/>
+    <field name="speaker"  type="string"   optional="true"/>
+    <field name="pose"     type="string"   optional="true"/>
+    <field name="bgm"      type="string"   optional="true"/>
+    <field name="sfx"      type="string"   optional="true"/>
+    <field name="effect"   type="string"   optional="true" example="shake|flash|attack"/>
+  </lineSchema>
+
+  <!-- ============================================================== -->
+  <!-- 6. NOTE DI PORTING WEBAPP                                      -->
+  <!-- ============================================================== -->
+  <portingNotes>
+    <suggestion>HTML + CSS Grid: 1 root con grid-template-rows: auto 1fr auto.</suggestion>
+    <suggestion>Box dialogo: position:absolute; bottom:120px; backdrop-filter:blur(2px).</suggestion>
+    <suggestion>Typewriter: requestAnimationFrame, lunghezza target = currentLine.length.</suggestion>
+    <suggestion>Persistenza progresso capitolo: localStorage key "vn.chapter7.lineIndex".</suggestion>
+    <suggestion>Asset: caricare le linee da JSON statico (chapter_7.json) generato dal copione.</suggestion>
+    <suggestion>Accessibilita': "tap to advance" deve avere alternativa tastiera (Space/Enter).</suggestion>
+  </portingNotes>
+
+</visualNovel>

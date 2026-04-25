@@ -1,0 +1,75 @@
+============================================================
+KEBAB RUNNER - CHAPTER 7
+Copione (53 elementi) - trascrizione dagli screenshot Unity
+Scena: "Fibunnycci attacks" (PICCOLOPLAY)
+============================================================
+
+[00] Oh, hi Lucertola Sensei!
+[01] What's going on?
+[02] Hi there, Piccoloplay!
+[03] I want to introduce you
+[04] Alien Emperor Cthulhu.
+[05] He is a math PhD
+[06] Is this the elusive student
+[07] who is supposed to
+[08] defeat me in Math?
+[09] Oh my god! A math PhD?
+[10] It must be very difficult
+[11] to earn a math Ph.D.
+[12] Press F to pay Respect
+[13] Well, I'm the most
+[14] powerful mathematician
+[15] in the whole universe.
+[16] Listen carefully, Bunny-Boy
+[17] I need you to unleash your
+[18] N*rc*ssistic Person@lity D*s@rder
+[19] Really? You sure about that?
+[20] Don't go too hard! Just 60%
+[21] *Takes a deep breath*
+[22] Listen up, Squid Face
+[23] ...
+[24] You can't proclaim yourself
+[25] Most powerful mathematician
+[26] in the whole universe.
+[27] I am a Math Ph.D.
+[28] Math PHD is just a..
+[29] Social construct!!1!!1
+[30] This is madness,
+[31] HOW DARE YOU???
+[32] I'm about to reset your Math
+[33] knowledge to Default settings.
+[34] Trust Me!
+[35] What you see now
+[36] is not my normal state!
+[37] This is just an approximation
+[38] of my Math power with a
+[39] Taylor polynomial 1st Order
+[40] WHAT??
+[41] and this is the approximation of
+[42] my power with a Taylor
+[43] polynomial second order.
+[44] Or you can just call it
+[45] FiBunnyCci 2.
+[46] What a useless transformation,
+[47] you changed your ears, so what?
+[48] Just wait! ...
+[49] And this...
+[50] Is... to go...
+[51] even further beyond!
+[52] .
+
+============================================================
+NOTE
+============================================================
+- 53 linee totali, indici 0-52.
+- Speaker visibile in scena: PICCOLOPLAY (tag in alto al box dialogo).
+- Le altre voci (Lucertola Sensei, Cthulhu, narratore) NON sono
+  taggate nell'array originale: il copione e' una lista piatta di
+  stringhe. Per il porting webapp si consiglia di arricchire ogni
+  linea con un campo "speaker" (vedi visualnovel-layout.xml,
+  sezione 5 lineSchema).
+- Riferimenti culturali: "Press F to pay Respect" (CoD: AW),
+  "go even further beyond" (DBZ), "FiBunnyCci" (gioco di parole
+  Fibonacci/Bunny).
+- L'elemento [52] e' un singolo punto "." -> probabilmente un
+  beat finale prima del fade out / transizione battaglia.
