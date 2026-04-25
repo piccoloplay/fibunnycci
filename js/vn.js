@@ -291,12 +291,25 @@ const VN = {
             const dx = slotX[slot] - dw / 2;
             const dy = sceneH - dh;
 
-            // Non-speaker dimming
+            // Non-speaker dimming — combine darker brightness + reduced
+            // saturation so the inactive bust reads as 'in shadow'. Just
+            // brightness(0.55) was too subtle.
             const isActive = this.activeSlot === null || this.activeSlot === slot;
             ctx.save();
-            if (!isActive) ctx.filter = 'brightness(0.55)';
+            if (!isActive) ctx.filter = 'brightness(0.45) saturate(0.55)';
             ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
             ctx.restore();
+
+            // Extra black tint on the inactive sprite (clipped to the
+            // sprite's own alpha via source-atop, so only the painted
+            // pixels darken — transparent areas stay transparent).
+            if (!isActive) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.fillStyle = 'rgba(0,0,0,0.22)';
+                ctx.fillRect(dx, dy, dw, dh);
+                ctx.restore();
+            }
 
             // Bottom fade gradient — softens the bust cut so it doesn't
             // look "decapitated" at the dialog box edge. Only applied
