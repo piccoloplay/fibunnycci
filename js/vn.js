@@ -33,6 +33,15 @@ const VN = {
     // pollute the main atlas)
     _imgCache: {},
 
+    // Bust crop: by default, show the top 55% of the full-body PNG so the
+    // bust "leans into" the dialog box. Per-character overrides can shift
+    // X and Y to handle off-centre artwork. All values normalised 0..1.
+    BUST_CROP_DEFAULT: { x: 0, y: 0, w: 1, h: 0.55 },
+    BUST_CROP: {
+        // Tighter top crop for tall sprites with a lot of head space
+        // can be added here as we tune them per character.
+    },
+
     // Short wait / pause directives
     _waitMs: 0,
 
@@ -94,17 +103,24 @@ const VN = {
     _preloadAssets() {
         const seen = new Set();
         for (const ev of this.events) {
-            if (ev.type === 'bg' && ev.image) this._loadImage(`assets/vn/bg/${ev.image}.png`, ev.image, seen);
+            if (ev.type === 'bg' && ev.image) this._loadImage('bg', ev.image, seen);
             if ((ev.type === 'show' || ev.type === 'change') && ev.sprite)
-                this._loadImage(`assets/vn/sprites/${ev.sprite}.png`, ev.sprite, seen);
+                this._loadImage('sprites', ev.sprite, seen);
         }
     },
 
-    _loadImage(path, key, seen) {
-        if (seen.has(key) || this._imgCache[key]) return;
-        seen.add(key);
+    // name can include the extension (e.g. "bg_kebab_stazione.jpg") or
+    // omit it (e.g. "bg_lavagna" → defaults to .png). The cache key is
+    // the name as written in the scene JSON, so render() can look it up
+    // by exactly that string.
+
+    _loadImage(folder, name, seen) {
+        if (seen.has(name) || this._imgCache[name]) return;
+        seen.add(name);
+        const file = name.includes('.') ? name : (name + '.png');
+        const path = `assets/vn/${folder}/${file}`;
         const img = new Image();
-        img.onload = () => { this._imgCache[key] = img; };
+        img.onload = () => { this._imgCache[name] = img; };
         img.onerror = () => { console.warn('[VN] missing asset', path); };
         img.src = path;
     },
@@ -123,12 +139,13 @@ const VN = {
                 continue;
             }
             if (ev.type === 'show') {
-                this.slots[ev.slot] = ev.sprite;
+                // mode optional: 'bust' (default) | 'full'
+                this.slots[ev.slot] = { sprite: ev.sprite, mode: ev.mode || 'bust' };
                 this._fadeMs = this._fadeDuration;
                 continue;
             }
             if (ev.type === 'change') {
-                this.slots[ev.slot] = ev.sprite;
+                this.slots[ev.slot] = { sprite: ev.sprite, mode: ev.mode || 'bust' };
                 continue;
             }
             if (ev.type === 'hide') {
@@ -176,8 +193,10 @@ const VN = {
         if (!speaker) return null;
         const s = speaker.toLowerCase().split(/\s+/)[0];
         for (const slot of ['left', 'center', 'right']) {
-            const spr = this.slots[slot];
-            if (spr && spr.toLowerCase().startsWith(s)) return slot;
+            const entry = this.slots[slot];
+            if (!entry) continue;
+            const key = (typeof entry === 'string') ? entry : entry.sprite;
+            if (key && key.toLowerCase().startsWith(s)) return slot;
         }
         return null;
     },
@@ -241,27 +260,54 @@ const VN = {
             });
         }
 
-        // Sprite slots — anchors along the scene band
+        // Sprite slots — anchors along the scene band.
+        // Each character is shown as a BUST (top portion of the full-body
+        // PNG) by default; pass mode:'full' on the show/change event to
+        // override. BUST_CROP holds per-character normalised crop boxes;
+        // anything not listed uses BUST_CROP_DEFAULT (top 55%).
         const slotX = { left: w * 0.22, center: w * 0.5, right: w * 0.78 };
         for (const slot of ['left', 'center', 'right']) {
-            const key = this.slots[slot];
-            if (!key) continue;
+            const entry = this.slots[slot];
+            if (!entry) continue;
+            const key = (typeof entry === 'string') ? entry : entry.sprite;
+            const mode = (typeof entry === 'object' && entry.mode) || 'bust';
             const img = this._imgCache[key];
             if (!img) continue;
-            const scale = (sceneH * 0.85) / img.height;
-            const dw = img.width * scale;
-            const dh = img.height * scale;
+
+            const cfg = (mode === 'full')
+                ? { x: 0, y: 0, w: 1, h: 1 }
+                : (this.BUST_CROP[key] || this.BUST_CROP_DEFAULT);
+
+            const sx = Math.round(cfg.x * img.width);
+            const sy = Math.round(cfg.y * img.height);
+            const sw = Math.round(cfg.w * img.width);
+            const sh = Math.round(cfg.h * img.height);
+
+            // Display height: ~85% of the scene band; width follows aspect
+            const targetH = sceneH * 0.85;
+            const scale = targetH / sh;
+            const dw = sw * scale;
+            const dh = sh * scale;
             const dx = slotX[slot] - dw / 2;
             const dy = sceneH - dh;
+
             // Non-speaker dimming
             const isActive = this.activeSlot === null || this.activeSlot === slot;
-            if (!isActive) {
-                ctx.save();
-                ctx.filter = 'brightness(0.55)';
-                ctx.drawImage(img, dx, dy, dw, dh);
-                ctx.restore();
-            } else {
-                ctx.drawImage(img, dx, dy, dw, dh);
+            ctx.save();
+            if (!isActive) ctx.filter = 'brightness(0.55)';
+            ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+            ctx.restore();
+
+            // Bottom fade gradient — softens the bust cut so it doesn't
+            // look "decapitated" at the dialog box edge. Only applied
+            // when bust-cropping (mode='bust').
+            if (mode === 'bust') {
+                const fadeH = Math.min(60, dh * 0.18);
+                const grd = ctx.createLinearGradient(0, dy + dh - fadeH, 0, dy + dh);
+                grd.addColorStop(0, 'rgba(0,0,0,0)');
+                grd.addColorStop(1, 'rgba(0,0,0,0.55)');
+                ctx.fillStyle = grd;
+                ctx.fillRect(dx, dy + dh - fadeH, dw, fadeH);
             }
         }
 
