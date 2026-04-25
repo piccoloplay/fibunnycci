@@ -1403,53 +1403,49 @@ const Combat = {
             color: '#fff', size: 26, bold: true, align: 'center'
         });
 
-        // Dots row — one per turn. Filled blue/red based on who won; outline-gray if not yet played.
+        // Two-sided scoreboard: blue dots on the LEFT (player wins, fill
+        // L→R) and red dots on the RIGHT (cpu wins, fill R←L) so it's
+        // immediately clear who's in the lead. Round needs 3 wins → 3
+        // dots per side. Centred separator "vs" between the two groups.
+        const winsToWin = this.roundsToWin || 3;
         const dotR = 10;
-        const gap = 18;
-        const totalW = maxTurns * (dotR * 2) + (maxTurns - 1) * gap;
-        const startX = (w - totalW) / 2 + dotR;
-        const dotY = centerY + 20;
+        const gap = 14;
+        const groupW = winsToWin * (dotR * 2) + (winsToWin - 1) * gap;
+        const sepW = 28;
+        const totalW = groupW * 2 + sepW;
+        const groupY = centerY + 20;
+        const leftStart = (w - totalW) / 2 + dotR;
+        const rightStart = (w - totalW) / 2 + groupW + sepW + dotR;
 
-        for (let i = 0; i < maxTurns; i++) {
-            const cx = startX + i * (dotR * 2 + gap);
-            const winner = this.turnHistory[i]; // 1, 2, or undefined
-            const isCurrent = i === this.turnHistory.length && (this.phase === 'tap_to_play' || this.phase === 'action_select' || this.phase === 'element_pick' || this.phase === 'morra_choice' || this.phase === 'countdown' || this.phase === 'reveal');
+        const drawDot = (cx, filled, blue) => {
+            const fill = filled
+                ? (blue ? '#60b0ff' : '#ff6080')
+                : 'rgba(255,255,255,0.08)';
+            const stroke = filled
+                ? (blue ? '#2060a0' : '#a02040')
+                : 'rgba(255,255,255,0.3)';
+            ctx.fillStyle = fill;
+            ctx.beginPath(); ctx.arc(cx, groupY, dotR, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        };
 
-            // Base
-            if (winner === 1) {
-                ctx.fillStyle = '#60b0ff';
-                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#2060a0';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            } else if (winner === 2) {
-                ctx.fillStyle = '#ff6080';
-                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = '#a02040';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            } else {
-                ctx.fillStyle = 'rgba(255,255,255,0.08)';
-                ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = isCurrent ? '#ffcc44' : 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = isCurrent ? 3 : 1.5;
-                ctx.stroke();
-                if (isCurrent) {
-                    // Pulsing halo for the current turn
-                    const pulse = 0.5 + Math.sin(this.animTimer * 0.006) * 0.5;
-                    ctx.strokeStyle = `rgba(255,204,68,${0.4 * pulse})`;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.arc(cx, dotY, dotR + 4 + pulse * 2, 0, Math.PI * 2); ctx.stroke();
-                }
-            }
+        // Player group (left, blue, fills left → right)
+        for (let i = 0; i < winsToWin; i++) {
+            const cx = leftStart + i * (dotR * 2 + gap);
+            drawDot(cx, i < this.playerMorraWins, true);
+        }
+        // CPU group (right, red, fills right → left so the "newest" CPU win
+        // is closest to the centre — mirrors player's L→R growth)
+        for (let i = 0; i < winsToWin; i++) {
+            const cx = rightStart + (winsToWin - 1 - i) * (dotR * 2 + gap);
+            drawDot(cx, i < this.cpuMorraWins, false);
         }
 
-        // Tiny legend
-        UI.text(ctx, `${this.playerMorraWins}`, panelX + 24, centerY + 26, {
-            color: '#60b0ff', size: 16, bold: true, align: 'center'
-        });
-        UI.text(ctx, `${this.cpuMorraWins}`, panelX + panelW - 24, centerY + 26, {
-            color: '#ff6080', size: 16, bold: true, align: 'center'
+        // "vs" separator
+        UI.text(ctx, 'vs', w / 2, groupY + 6, {
+            color: 'rgba(255,255,255,0.55)', size: 14, bold: true, align: 'center'
         });
 
         ctx.restore();
@@ -1798,7 +1794,13 @@ const Combat = {
         const x = cx - barW / 2;
         const ratio = Math.max(0, Math.min(1, creature.currentHp / creature.maxHp));
 
-        // PLAYER / CPU tag pill
+        // PLAYER / CPU tag pill — blue for player, red for cpu (matches
+        // the move-history columns and the score dots, so the side colours
+        // are consistent throughout the combat HUD).
+        const isPlayer = sideLabel === 'PLAYER';
+        const sideFill = isPlayer ? 'rgba(60,140,220,0.95)' : 'rgba(200,70,70,0.95)';
+        const nameColor = isPlayer ? '#88ccff' : '#ff9999';
+
         if (sideLabel) {
             ctx.save();
             ctx.font = 'bold 14px Nunito, sans-serif';
@@ -1806,7 +1808,7 @@ const Combat = {
             const tagH = 20;
             const tagX = cx - tagW / 2;
             const tagY = y - 52;
-            ctx.fillStyle = sideLabel === 'PLAYER' ? 'rgba(60,180,110,0.95)' : 'rgba(200,70,70,0.95)';
+            ctx.fillStyle = sideFill;
             UI.roundRect(ctx, tagX, tagY, tagW, tagH, 10);
             ctx.fill();
             ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -1819,9 +1821,9 @@ const Combat = {
             ctx.restore();
         }
 
-        // Creature name
+        // Creature name — coloured to match the side
         UI.textOutline(ctx, creature.creatureName, cx, y - 10, {
-            color: '#fff', size: 18, bold: true, align: 'center'
+            color: nameColor, size: 18, bold: true, align: 'center'
         });
         // Bar (reuse UI.drawHPBar if available, else fallback)
         if (UI.drawHPBar) {
@@ -2170,10 +2172,13 @@ const Combat = {
 
         const history = this.roundMoveHistory || [];
         const last3 = history.slice(-3);
-        // Pad at the start so the most recent always sits in the bottom cell.
+        // Fill cells top-down: top slot gets the oldest visible move, empty
+        // slots are at the bottom (column "grows" downward as turns happen).
         const padded = [];
-        for (let i = 0; i < 3 - last3.length; i++) padded.push(null);
         for (const e of last3) padded.push(e);
+        while (padded.length < 3) padded.push(null);
+        // Index of the most recently played cell (or -1 if none yet)
+        const latestIdx = last3.length - 1;
 
         // Headers
         UI.text(ctx, 'TUE', leftX + cellSize / 2, colTop - 10, {
@@ -2186,7 +2191,7 @@ const Combat = {
         for (let i = 0; i < 3; i++) {
             const entry = padded[i];
             const cy = colTop + i * (cellSize + cellGap);
-            const isLatest = (i === 2) && !!entry;
+            const isLatest = (i === latestIdx) && !!entry;
             this._drawHistoryCell(ctx, leftX,  cy, cellSize, entry ? ICONS[entry.p] : null, isLatest, '#88ccff');
             this._drawHistoryCell(ctx, rightX, cy, cellSize, entry ? ICONS[entry.c] : null, isLatest, '#ff9999');
         }
