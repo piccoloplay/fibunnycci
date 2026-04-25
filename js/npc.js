@@ -14,7 +14,8 @@ const NPC = {
             dialogueIndex: 0,
             triggerTris: data.triggerTris || null,
             triggerCombat: data.triggerCombat || null,
-            triggerVN: data.triggerVN || null
+            triggerVN: data.triggerVN || null,
+            triggerKebabRunner: data.triggerKebabRunner || null
         }));
     },
 

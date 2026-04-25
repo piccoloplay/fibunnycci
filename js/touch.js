@@ -227,6 +227,11 @@ const Touch = {
             return;
         }
 
+        if (state === 'kebab_runner') {
+            KebabRunner.onTap(pos.x, pos.y);
+            return;
+        }
+
         if (state === 'overworld') {
             // Check bottom nav bar tap
             const h = this._canvas.height;

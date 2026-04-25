@@ -6,6 +6,7 @@ const Game = {
     _pendingTris: null,
     _pendingCombat: null,
     _pendingVN: null,
+    _pendingKebab: null,
     _loadingAfter: null,    // callback to run once all assets are in cache
     _currentAreaId: 'villaggio',
     _transitionTimer: 0,
@@ -216,6 +217,10 @@ const Game = {
                         VN.start(this._pendingVN);
                         this.state = 'vn';
                         this._pendingVN = null;
+                    } else if (this._pendingKebab) {
+                        KebabRunner.start(this._pendingKebab, this.canvas.width, this.canvas.height);
+                        this.state = 'kebab_runner';
+                        this._pendingKebab = null;
                     } else {
                         this.state = 'overworld';
                     }
@@ -224,6 +229,21 @@ const Game = {
             case 'vn':
                 VN.update(dt);
                 if (!VN.active) {
+                    this.state = 'overworld';
+                    Audio.playMusic(this._currentAreaId);
+                }
+                break;
+            case 'kebab_runner':
+                KebabRunner.update(dt);
+                KebabRunner.onKeyboard();
+                if (!KebabRunner.active) {
+                    // Award gold + flag on win
+                    if (KebabRunner.phase === 'win') {
+                        this.gameState.inventory = this.gameState.inventory || {};
+                        this.gameState.inventory.oro = (this.gameState.inventory.oro || 0) + KebabRunner.rewardOro;
+                        this.gameState.flags = this.gameState.flags || {};
+                        this.gameState.flags['kebab_' + (KebabRunner.recipeId || 'classico') + '_done'] = true;
+                    }
                     this.state = 'overworld';
                     Audio.playMusic(this._currentAreaId);
                 }
@@ -409,6 +429,8 @@ const Game = {
             this._pendingTris = npc.triggerTris;
         } else if (npc.triggerVN) {
             this._pendingVN = npc.triggerVN;
+        } else if (npc.triggerKebabRunner) {
+            this._pendingKebab = npc.triggerKebabRunner;
         }
         NPC.advanceDialogue(npc);
     },
@@ -487,6 +509,10 @@ const Game = {
 
             case 'vn':
                 VN.render(ctx, w, h);
+                break;
+
+            case 'kebab_runner':
+                KebabRunner.render(ctx, w, h);
                 break;
 
             case 'loading':

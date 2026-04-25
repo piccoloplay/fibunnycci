@@ -45,10 +45,11 @@
             "direction": "down",
             "color": "#8b6843",
             "dialogue": [[
-                "Una volta nel Yilon-Verse...",
-                "...beh, è stato molto tempo fa, giovane.",
-                "Oggi il coniglio è tornato."
-            ]]
+                "Senti che fame, giovane.",
+                "Vuoi correre a prendermi gli ingredienti per un kebab classico?",
+                "Sai come si fa: niente ostacoli, raccogli tutto, salta quando serve."
+            ]],
+            "triggerKebabRunner": "kebab_classico"
         },
         {
             "id": "student",

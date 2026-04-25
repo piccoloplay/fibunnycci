@@ -308,6 +308,7 @@ const Sprites = {
         this.loadPlayerSprites();
         this.loadNpcSprites();
         this.loadCreatureVariants();
+        this.loadKebabRunnerSprites();
     },
 
     CREATURE_VARIANTS: {
@@ -329,6 +330,21 @@ const Sprites = {
                 img.onerror = () => { done(); /* leave procedural fallback */ };
                 img.src = `assets/sprites/creatures/${key}.png`;
             }
+        }
+    },
+
+    KEBAB_RUNNER_INGREDIENTS: [
+        'cetrioli','pomodori','cipolla','ketchup_maionese','salsa_yogurt',
+        'salsa_piccante','carne','panino','piadina','patatine_fritte','insalata'
+    ],
+    loadKebabRunnerSprites() {
+        for (const id of this.KEBAB_RUNNER_INGREDIENTS) {
+            const key = `kr_${id}`;
+            const img = new Image();
+            const done = this._trackImage();
+            img.onload  = () => { this._cache[key] = img; done(); };
+            img.onerror = () => { done(); };
+            img.src = `assets/sprites/kebab_runner/${id}.png`;
         }
     },
 
