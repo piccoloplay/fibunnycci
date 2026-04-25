@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Kebab Runner — specifica del minigame integrato nel JRPG.
+  Riscritto per il porting reale: vanilla JS + Canvas 2D, no framework,
+  no build step. Coerente con il resto del codebase (stessi pattern di
+  combat.js / tris.js / vn.js).
+-->
+<game name="KebabRunner" genre="3-lane-runner-portrait" target="canvas2d">
+
+  <overview>
+    <description>
+      Runner verticale top-down a 3 corsie. Il player (Piccoloplay) sta
+      fisso in basso al centro della schermata; il mondo scorre verso il
+      basso. Il giocatore cambia corsia a sinistra/destra e usa il salto
+      per superare ostacoli alti o agganciare ingredienti aerei. La run
+      finisce VINTA quando la ricetta corrente e' completa, PERSA quando
+      finiscono le vite.
+    </description>
+    <controls>
+      <input>tap META' SINISTRA dello schermo o tasto sx -> sposta corsia di -1</input>
+      <input>tap META' DESTRA  dello schermo o tasto dx -> sposta corsia di +1</input>
+      <input>swipe-up o pulsante SALTA o spazio -> salto 700ms</input>
+    </controls>
+    <orientation>portrait 672x1320 (canvas standard del JRPG)</orientation>
+  </overview>
+
+  <ingredients>
+    <ingredient id="cetrioli"         png="assets/sprites/kebab_runner/cetrioli.png"         label="Cetrioli"/>
+    <ingredient id="pomodori"         png="assets/sprites/kebab_runner/pomodori.png"         label="Pomodori"/>
+    <ingredient id="cipolla"          png="assets/sprites/kebab_runner/cipolla.png"          label="Cipolla"/>
+    <ingredient id="ketchup_maionese" png="assets/sprites/kebab_runner/ketchup_maionese.png" label="Ketchup/Maionese"/>
+    <ingredient id="salsa_yogurt"     png="assets/sprites/kebab_runner/salsa_yogurt.png"     label="Salsa yogurt"/>
+    <ingredient id="salsa_piccante"   png="assets/sprites/kebab_runner/salsa_piccante.png"   label="Salsa piccante"/>
+    <ingredient id="carne"            png="assets/sprites/kebab_runner/carne.png"            label="Carne"/>
+    <ingredient id="panino"           png="assets/sprites/kebab_runner/panino.png"           label="Panino"/>
+    <ingredient id="piadina"          png="assets/sprites/kebab_runner/piadina.png"          label="Piadina"/>
+    <ingredient id="patatine_fritte"  png="assets/sprites/kebab_runner/patatine_fritte.png"  label="Patatine fritte"/>
+    <ingredient id="insalata"         png="assets/sprites/kebab_runner/insalata.png"         label="Insalata"/>
+  </ingredients>
+
+  <recipes>
+    <description>
+      Ogni run ha una ricetta target = mappa { ingredientId: count }.
+      Vinto se per ogni ingrediente richiesto count raccolto >= count
+      richiesto. La ricetta default per il primo NPC (kebabbaro) e' un
+      "Kebab Classico" semplice; ricette piu' lunghe verranno assegnate
+      in capitoli avanzati.
+    </description>
+    <recipe id="kebab_classico">
+      <ingredient ref="panino"         count="1"/>
+      <ingredient ref="carne"          count="1"/>
+      <ingredient ref="cetrioli"       count="2"/>
+      <ingredient ref="salsa_piccante" count="1"/>
+    </recipe>
+  </recipes>
+
+  <state module="js/kebab_runner.js">
+    <field name="active"     type="bool"/>
+    <field name="phase"      type="string" desc="'tutorial' | 'running' | 'win' | 'lose'"/>
+    <field name="lane"       type="int"    desc="-1 sx, 0 centro, 1 dx — corsia logica"/>
+    <field name="laneAnimX"  type="float"  desc="offset X interpolato per cambio corsia"/>
+    <field name="jumpMs"     type="int"    desc="ms residui di salto; 0 = a terra"/>
+    <field name="scrollY"    type="float"  desc="quanto e' scorsa la pista (px)"/>
+    <field name="speed"      type="float"  desc="px/ms di scroll, cresce nel tempo"/>
+    <field name="objects"    type="array"  desc="entita' attive: { type:'ing'|'obs', kind, lane, spawnY, aerial }"/>
+    <field name="inventory"  type="object" desc="{ ingredientId: count }"/>
+    <field name="recipe"     type="object" desc="{ ingredientId: count }"/>
+    <field name="lives"      type="int"    desc="3 a inizio run; -1 a ogni ostacolo non saltato"/>
+    <field name="elapsedMs"  type="int"/>
+  </state>
+
+  <gameLoop>
+    <step n="1">scrollY += speed * dt; speed cresce ~0.0001 px/ms al ms (cap a 0.6)</step>
+    <step n="2">spawn periodico di "row": ogni 360 px di scroll scegli una pattern dalla tabella</step>
+    <step n="3">aggiorna jumpMs (decremento); il salto dura 700 ms</step>
+    <step n="4">interpola laneAnimX verso lane*laneWidth (lerp ~18% per frame)</step>
+    <step n="5">collisione: oggetti sulla corsia del player con worldY entro [-44, +44]:
+      - se ingrediente non aereo o aereo+jumping: pickup, +1 inventario, rimuovi
+      - se ostacolo: se jumpMs &gt; 0 e ostacolo "low" -> ignora; altrimenti -1 vita</step>
+    <step n="6">check win: per ogni ingrediente della ricetta count_invent &gt;= count_richiesto -&gt; 'win'</step>
+    <step n="7">check lose: lives &lt;= 0 -&gt; 'lose'</step>
+  </gameLoop>
+
+  <spawnPatterns>
+    <pattern weight="3" desc="ingrediente singolo casuale in una corsia"/>
+    <pattern weight="2" desc="ingrediente sulla stessa riga in 2 corsie"/>
+    <pattern weight="2" desc="ostacolo low in 1 corsia"/>
+    <pattern weight="2" desc="ostacolo high in 1 corsia (saltabile)"/>
+    <pattern weight="1" desc="ostacolo in 2 corsie (1 via libera)"/>
+    <pattern weight="1" desc="ingrediente aereo: collezionabile solo saltando"/>
+  </spawnPatterns>
+
+  <integration>
+    <state name="kebab_runner" engine="js/engine.js"/>
+    <trigger npc="kebabbaro" field="triggerKebabRunner" payload="kebab_classico"/>
+    <reward onWin="flag.kebab_classico_done=true; +50 oro; dialogo speciale"/>
+    <onLose desc="torna in overworld, nessuna penalita'; ritenta parlando di nuovo all'NPC"/>
+  </integration>
+
+  <notes>
+    Niente Three.js / Phaser / build step: il minigame riutilizza UI,
+    Sprites loader, Audio, Input e Touch del progetto. Lane width = w/3.
+    Il salto e' renderizzato come "pop" verticale dello sprite player
+    e riduzione dell'ombra (nessuna fisica reale, solo interpolazione).
+    Tutorial overlay riusa lo stesso pattern di combat (slide-overlay
+    pattern, accessibile dal pulsante "?" in alto a sinistra).
+  </notes>
+
+</game>
