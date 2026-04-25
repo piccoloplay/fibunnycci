@@ -2199,18 +2199,41 @@ const Combat = {
 
     _drawHistoryCell(ctx, x, y, size, iconChar, isLatest, accent) {
         const filled = !!iconChar;
-        ctx.fillStyle = filled ? 'rgba(15,20,40,0.78)' : 'rgba(15,20,40,0.35)';
+        // Pulse phase 0..1 — sine wave, only used on the latest cell.
+        const pulse = isLatest ? 0.5 + 0.5 * Math.sin(this.animTimer * 0.006) : 0;
+
+        // Background — slightly brightens with the pulse on the latest cell.
+        if (isLatest) {
+            ctx.fillStyle = `rgba(${30 + pulse * 35},${40 + pulse * 50},${80 + pulse * 60},${0.78 + pulse * 0.18})`;
+        } else {
+            ctx.fillStyle = filled ? 'rgba(15,20,40,0.78)' : 'rgba(15,20,40,0.35)';
+        }
         UI.roundRect(ctx, x, y, size, size, 12);
         ctx.fill();
+
+        // Border — the latest cell pulses thickness + alpha; others stay flat.
         if (isLatest) {
             ctx.strokeStyle = accent;
-            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.7 + pulse * 0.3;
+            ctx.lineWidth = 3 + pulse * 2;
         } else {
             ctx.strokeStyle = filled ? 'rgba(200,210,255,0.45)' : 'rgba(200,210,255,0.15)';
             ctx.lineWidth = 1.5;
         }
         UI.roundRect(ctx, x, y, size, size, 12);
         ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Outer halo on the latest cell
+        if (isLatest) {
+            ctx.strokeStyle = accent;
+            ctx.globalAlpha = 0.25 * pulse;
+            ctx.lineWidth = 6;
+            UI.roundRect(ctx, x - 4, y - 4, size + 8, size + 8, 16);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+
         if (filled) {
             ctx.font = '40px Nunito, sans-serif';
             ctx.textAlign = 'center';
