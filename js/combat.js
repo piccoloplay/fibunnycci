@@ -324,8 +324,8 @@ const Combat = {
             this.cpuCreature = this.cpuTeam[this.cpuCreatureIndex];
             this.cpuCreature.currentHp = this.cpuCreature.maxHp;
 
-            // Transition into battle
-            this._startTransition('#0a0a20', () => {
+            // Transition into battle — sakura pink polka, kawaii vibe
+            this._startTransition('#ff90c0', () => {
                 this.currentTurn = 0;
                 this.playerMorraWins = 0;
                 this.cpuMorraWins = 0;
@@ -667,7 +667,8 @@ const Combat = {
                 this.phase = 'match_end';
                 this.phaseTimer = 0;
             } else {
-                this._startTransition('#0a0a20');
+                // Between rounds — same sakura pink as the entry transition
+                this._startTransition('#ff90c0');
                 this.phase = 'unit_select';
                 this.selectIndex = -1; // No pre-selection
                 this.phaseTimer = 0;
