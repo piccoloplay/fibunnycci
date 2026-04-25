@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Specifica di porting da Unity (C#) a WebApp del gioco "Kebab Runner".
+  Generato il 2026-04-25 a partire dall'analisi dei seguenti script:
+    - KebabMovement.cs        (loop di gioco, generazione tracciato, transizione scene)
+    - InvetoryPoints.cs       (inventario ingredienti, condizione di vittoria, UI conteggi)
+    - Ingredienti.cs          (pickup ingrediente -> AddPoints + Destroy)
+    - SwipeLeftRight.cs       (input swipe orizzontale, sposta player di +/- 2 su X)
+    - SwipeKebab.cs           (input swipe per fase preparazione)
+    - MasterLIVELLO.cs        (segmento di pista: ostacoli + ingredienti attivati)
+    - GoalSetterkebab.cs      (verifica composizione kebab finale)
+-->
+<game name="KebabRunner" genre="endless-runner-3-corsie" target="webapp">
+
+  <!-- ============================================================== -->
+  <!-- 1. PANORAMICA                                                  -->
+  <!-- ============================================================== -->
+  <overview>
+    <description>
+      Runner verticale a 3 corsie (X = -2, 0, +2). Il personaggio avanza
+      automaticamente lungo Z. Il giocatore swippa sinistra/destra per
+      cambiare corsia ed evitare ostacoli, raccogliendo ingredienti per
+      assemblare un kebab. Quando tutti gli ingredienti richiesti
+      raggiungono la quota richiesta -> scena WIN. Se si supera
+      MAX_PISTA_INDEX senza completare l'obiettivo -> gameOver.
+    </description>
+    <controls>
+      <input type="swipe-left">cambia corsia: x -= 2 (clamp a -2)</input>
+      <input type="swipe-right">cambia corsia: x += 2 (clamp a +2)</input>
+      <input type="swipe-up" phase="preparazione">extendIngridents.SendMeat()</input>
+    </controls>
+    <orientation>portrait 1920x1080 (vedi screenshot Unity Game view)</orientation>
+  </overview>
+
+  <!-- ============================================================== -->
+  <!-- 2. INGREDIENTI (mapping da InvetoryPoints.cs)                  -->
+  <!-- ============================================================== -->
+  <ingredients>
+    <!-- L'indice e' usato sia da Ingredienti.type sia da AddPoints(int) -->
+    <ingredient id="0"  field="cetrioli"        label_it="Cetrioli"        label_en="Cucumbers"/>
+    <ingredient id="1"  field="pomodori"        label_it="Pomodori"        label_en="Tomatoes"/>
+    <ingredient id="2"  field="scibolla"        label_it="Cipolla"         label_en="Onion"/>
+    <ingredient id="3"  field="keshapMayo"      label_it="Ketchup/Maionese" label_en="Ketchup/Mayo"/>
+    <ingredient id="4"  field="yogurt"          label_it="Yogurt"          label_en="Yogurt sauce"/>
+    <ingredient id="5"  field="biccante"        label_it="Salsa piccante"  label_en="Spicy sauce"/>
+    <ingredient id="6"  field="carne"           label_it="Carne"           label_en="Meat"/>
+    <ingredient id="7"  field="panino"          label_it="Panino"          label_en="Bun"/>
+    <ingredient id="8"  field="piadina"         label_it="Piadina"         label_en="Flatbread"/>
+    <ingredient id="9"  field="patatineFritti"  label_it="Patatine fritte" label_en="Fries"/>
+    <ingredient id="10" field="insalata"        label_it="Insalata"        label_en="Lettuce"/>
+  </ingredients>
+
+  <!-- ============================================================== -->
+  <!-- 3. ASSET GRAFICI                                               -->
+  <!-- ============================================================== -->
+  <assets>
+    <note>
+      Le 11 immagini originali sono state copiate in:
+      %USERPROFILE%\Documents\KebabRunner_Ingredienti\
+      I nomi originali ("Opera_senza_titolo N.png") NON corrispondono 1:1
+      all'indice del campo nell'inventario: l'ordine in Ingredienti.ingredienti
+      e' impostato dall'Inspector di Unity, non dal nome file.
+      Da abbinare visivamente al label_it sopra prima dell'uso in webapp.
+    </note>
+    <files>
+      <file src="Opera_senza_titolo.png"/>
+      <file src="Opera_senza_titolo 2.png"/>
+      <file src="Opera_senza_titolo 3.png"/>
+      <file src="Opera_senza_titolo 4.png"/>
+      <file src="Opera_senza_titolo 5.png"/>
+      <file src="Opera_senza_titolo 6.png"/>
+      <file src="Opera_senza_titolo 7.png"/>
+      <file src="Opera_senza_titolo 8.png"/>
+      <file src="Opera_senza_titolo 9.png"/>
+      <file src="Opera_senza_titolo 10.png"/>
+      <file src="Opera_senza_titolo 11.png"/>
+    </files>
+  </assets>
+
+  <!-- ============================================================== -->
+  <!-- 4. LOOP DI GIOCO  (da KebabMovement.cs)                        -->
+  <!-- ============================================================== -->
+  <gameLoop>
+    <state name="speed"          type="float" desc="durata LeanTween.moveZ verso targetZ"/>
+    <state name="iterations"     type="int"   desc="numero di segmenti gia' generati"/>
+    <state name="targetZ"        type="float" desc="Z di destinazione del player"/>
+    <state name="indicePista"    type="int"   desc="indice corrente in indiciPista[]"/>
+    <state name="MAX_PISTA_INDEX" type="int"  desc="oltre questo indice -> gameOver"/>
+    <state name="raccolta"       type="bool"  desc="true => avanza indicePista a ogni segmento"/>
+    <state name="panino"         type="bool"  desc="modalita' richiesta (panino) vs piadina"/>
+
+    <step n="1">Awake: instance = this; raccolta = true</step>
+    <step n="2">Start: instatiate_Pista(); movePiccoloPlay() -> LeanTween.moveZ(piccoloPlay, targetZ, speed)</step>
+    <step n="3">
+      Update: se inventoryPoints.END_GAME() -> LeanTween.cancelAll();
+      GodSceneManager.scene = sceneToLoad; SceneManager.LoadScene("WIN");
+    </step>
+    <step n="4">
+      Quando piccoloPlay.z == targetZ:
+        iterations++;
+        targetZ = iterations * Orginal;
+        instatiate_Pista();
+        movePiccoloPlay();
+        se raccolta: indicePista++;
+          se indicePista == MAX_PISTA_INDEX -> gameOver;
+          se indicePista == indiciPista.Count -> indicePista = 1;
+          piiista = 1;
+          attiva camere[0,2,4,5], disattiva camere[1].
+    </step>
+  </gameLoop>
+
+  <!-- ============================================================== -->
+  <!-- 5. GENERAZIONE SEGMENTO (KebabMovement.SetStage / MasterLIVELLO)-->
+  <!-- ============================================================== -->
+  <stageGeneration>
+    <description>
+      Ogni MasterLIVELLO ha un array "attivi[]" (bool) e un array "typo[]" (int).
+      In Awake il segmento richiama KebabMovement.SetStage(this) che,
+      in base a indiciPista[indicePista], decide quali muri/ostacoli attivare
+      e quale ingrediente assegnare a quel muro (typo[i]).
+      Poi il segmento attiva i GameObject corrispondenti e setta
+      SetterInventario.ingrediente = typo[i].
+    </description>
+    <stage value="0" desc="vuoto / placeholder"/>
+    <stage value="1" desc="MuriCentrale: posizioni 0,3 attive con coppia (bad=6, good=6) -> carne"/>
+    <stage value="2" desc="MuriIniziali: posizioni 1,2 attive con (bad=8, good=7) -> panino/piadina"/>
+    <stage value="3" desc="OSTACOLI_RANDOM: attiva una posizione fra 6..8"/>
+    <stage value="4" desc="
+      verdure/salse. Se panino e inventoryPoints.panino &lt; 4 -> rilancia MuriIniziali(7,8).
+      Se piadina e inventoryPoints.piadina &lt; 4 -> rilancia MuriIniziali(7,8).
+      Altrimenti muriSCelta(): random fra MuriCentraleDx, MuriCentraleSx,
+      MuriFinali, MuriFinali con (variabileBuona, variabileInutile).
+    "/>
+    <wallHelpers>
+      <helper name="MuriIniziali"    slots="1,2"  params="good,bad"/>
+      <helper name="MuriCentrale"    slots="0,3"  params="good,bad"/>
+      <helper name="MuriCentraleSx"  slots="0,4"  params="good,bad"/>
+      <helper name="MuriCentraleDx"  slots="0,5"  params="good,bad"/>
+      <helper name="MuriFinali"      slots="4,5"  params="good,bad"/>
+      <helper name="OSTACOLI_RANDOM" slots="6..8" params="-"/>
+    </wallHelpers>
+  </stageGeneration>
+
+  <!-- ============================================================== -->
+  <!-- 6. INVENTARIO + AVANZAMENTO INGREDIENTI (InvetoryPoints.cs)    -->
+  <!-- ============================================================== -->
+  <inventory>
+    <field name="goals"             type="int[]"  desc="quota richiesta per ogni ingrediente (size 10+)"/>
+    <field name="numeroMAX_DA_SETTARE" type="int" desc="quando il count del 'good' corrente raggiunge questa soglia, si passa al prossimo good"/>
+    <field name="verduresalse"      type="int[]"  desc="lista id ingredienti 'buoni' in ordine"/>
+    <field name="verduresalse2"     type="int[]"  desc="lista id ingredienti 'inutili' (distrattori)"/>
+    <field name="index1"            type="int"    desc="indice corrente in verduresalse"/>
+    <field name="index2"            type="int"    desc="indice corrente in verduresalse2"/>
+
+    <onPickup>
+      Ingredienti.OnCollisionEnter(piccoloplay):
+        se virgin -> KebabMovement.PlayItem();
+                     virgin = false;
+                     InvetoryPoints.AddPoints(this.type);
+                     Destroy(this.gameObject);
+    </onPickup>
+
+    <update>
+      Se balanceOf(variabileBuona) &gt;= numeroMAX_DA_SETTARE -> index1++ e
+      KebabMovement.variabileBuona = verduresalse[index1] (cap a 3).
+      Stessa logica per variabileInutile/index2/verduresalse2.
+      UI: Ui_Nums[i].text = "x" + count_i  (i = 0..10).
+    </update>
+
+    <endGame>
+      cetrioli&gt;=goals[0] AND pomodori&gt;=goals[1] AND scibolla&gt;=goals[2] AND
+      keshapMayo&gt;=goals[3] AND yogurt&gt;=goals[4] AND biccante&gt;=goals[5] AND
+      carne&gt;=goals[6] AND panino&gt;=goals[7] AND piadina&gt;=goals[8] AND
+      patatineFritti&gt;=goals[9].
+    </endGame>
+  </inventory>
+
+  <!-- ============================================================== -->
+  <!-- 7. INPUT (SwipeLeftRight.cs)                                   -->
+  <!-- ============================================================== -->
+  <input>
+    <handler event="Left">
+      if(player.x == -2) ignore; else tween x -= 2 in 0.2s; play swipeSound.
+    </handler>
+    <handler event="Right">
+      if(player.x ==  2) ignore; else tween x += 2 in 0.2s; play swipeSound.
+    </handler>
+    <handler event="Up"   note="riusato come Right (probabile bug originale)"/>
+    <handler event="Down" note="riusato come Left  (probabile bug originale)"/>
+  </input>
+
+  <!-- ============================================================== -->
+  <!-- 8. FASE PREPARAZIONE KEBAB (GoalSetterkebab.cs)                -->
+  <!-- ============================================================== -->
+  <kebabAssembly>
+    <description>
+      Dopo la corsa il giocatore compone il kebab. ingredientiMessi[] viene
+      riempito; KebabPreparatoBene() ritorna true sse:
+        - count(ingredientiMessi) == count(ingridentiDaMettere)
+        - ogni elemento di ingredientiMessi e' contenuto in ingridentiDaMettere.
+      NB: e' un check insiemistico, NON ordinato.
+    </description>
+  </kebabAssembly>
+
+  <!-- ============================================================== -->
+  <!-- 9. SCENE / FLOW                                                -->
+  <!-- ============================================================== -->
+  <flow>
+    <scene name="HOME"/>
+    <scene name="GAME"        desc="runner"/>
+    <scene name="PrepareKebab" desc="assemblaggio (vedi GoalSetterkebab)"/>
+    <scene name="WIN"         desc="vittoria, raggiunta quando END_GAME()==true"/>
+    <scene name="gameOver"    desc="raggiunto MAX_PISTA_INDEX"/>
+  </flow>
+
+  <!-- ============================================================== -->
+  <!-- 10. RACCOMANDAZIONI PER IL PORTING WEBAPP                      -->
+  <!-- ============================================================== -->
+  <webPortingNotes>
+    <stack suggestion="Three.js + TypeScript + Vite, oppure Babylon.js"/>
+    <alt   suggestion="2D top-down con PixiJS o Phaser 3 se 3D non necessario"/>
+    <replace lib="LeanTween">  GSAP / tween.js</replace>
+    <replace lib="UnityEngine.SceneManagement"> stato globale (Zustand/Redux) + router di scene</replace>
+    <replace lib="TextMeshPro"> &lt;span&gt; HTML/CSS sopra il canvas</replace>
+    <replace lib="GG.Infrastructure.Utils.Swipe"> Pointer Events + soglia velocita' su touchstart/touchmove/touchend</replace>
+    <inputModel>
+      Discreto a 3 corsie: lane in {-1, 0, +1}; tween su delta 2 unita' world,
+      durata 200ms (come l'originale).
+    </inputModel>
+    <collisions>
+      Bounding-box AABB sufficiente: il player si muove solo lungo X discreto
+      e Z lineare; gli ostacoli/ingredienti sono fissi sul segmento.
+    </collisions>
+    <segmentSpawning>
+      Spawn modulare ogni "Orginal" unita' di Z; pool di pista[]; ruotare
+      indiciPista[] modulo length, esattamente come l'originale.
+    </segmentSpawning>
+    <save>localStorage per progressi (capitolo, sblocchi)</save>
+  </webPortingNotes>
+
+</game>
