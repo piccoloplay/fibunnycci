@@ -1403,50 +1403,32 @@ const Combat = {
             color: '#fff', size: 26, bold: true, align: 'center'
         });
 
-        // Two-sided scoreboard: blue dots on the LEFT (player wins, fill
-        // L→R) and red dots on the RIGHT (cpu wins, fill R←L) so it's
-        // immediately clear who's in the lead. Round needs 3 wins → 3
-        // dots per side. Centred separator "vs" between the two groups.
-        const winsToWin = this.roundsToWin || 3;
-        const dotR = 10;
-        const gap = 14;
-        const groupW = winsToWin * (dotR * 2) + (winsToWin - 1) * gap;
-        const sepW = 28;
-        const totalW = groupW * 2 + sepW;
-        const groupY = centerY + 20;
-        const leftStart = (w - totalW) / 2 + dotR;
-        const rightStart = (w - totalW) / 2 + groupW + sepW + dotR;
+        // Single row of 5 dots — one per turn of the round (max 5).
+        // Blue fills from the LEFT as the player wins morra; red fills
+        // from the RIGHT as CPU wins. They meet in the middle. No 'vs'
+        // separator: the colours speak for themselves.
+        const dotR = 11;
+        const gap = 16;
+        const totalW = maxTurns * (dotR * 2) + (maxTurns - 1) * gap;
+        const startX = (w - totalW) / 2 + dotR;
+        const dotY = centerY + 22;
 
-        const drawDot = (cx, filled, blue) => {
-            const fill = filled
-                ? (blue ? '#60b0ff' : '#ff6080')
-                : 'rgba(255,255,255,0.08)';
-            const stroke = filled
-                ? (blue ? '#2060a0' : '#a02040')
-                : 'rgba(255,255,255,0.3)';
+        for (let i = 0; i < maxTurns; i++) {
+            const cx = startX + i * (dotR * 2 + gap);
+            const isPlayer = i < this.playerMorraWins;
+            const isCpu    = (maxTurns - 1 - i) < this.cpuMorraWins;
+
+            let fill = 'rgba(255,255,255,0.08)';
+            let stroke = 'rgba(255,255,255,0.3)';
+            if (isPlayer) { fill = '#60b0ff'; stroke = '#2060a0'; }
+            else if (isCpu) { fill = '#ff6080'; stroke = '#a02040'; }
+
             ctx.fillStyle = fill;
-            ctx.beginPath(); ctx.arc(cx, groupY, dotR, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, dotY, dotR, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = stroke;
             ctx.lineWidth = 2;
             ctx.stroke();
-        };
-
-        // Player group (left, blue, fills left → right)
-        for (let i = 0; i < winsToWin; i++) {
-            const cx = leftStart + i * (dotR * 2 + gap);
-            drawDot(cx, i < this.playerMorraWins, true);
         }
-        // CPU group (right, red, fills right → left so the "newest" CPU win
-        // is closest to the centre — mirrors player's L→R growth)
-        for (let i = 0; i < winsToWin; i++) {
-            const cx = rightStart + (winsToWin - 1 - i) * (dotR * 2 + gap);
-            drawDot(cx, i < this.cpuMorraWins, false);
-        }
-
-        // "vs" separator
-        UI.text(ctx, 'vs', w / 2, groupY + 6, {
-            color: 'rgba(255,255,255,0.55)', size: 14, bold: true, align: 'center'
-        });
 
         ctx.restore();
     },
@@ -2171,14 +2153,13 @@ const Combat = {
         const rightX = w - 36 - cellSize;
 
         const history = this.roundMoveHistory || [];
-        const last3 = history.slice(-3);
-        // Fill cells top-down: top slot gets the oldest visible move, empty
-        // slots are at the bottom (column "grows" downward as turns happen).
+        // Most recent first (top), older ones cascade down. New move pushes
+        // the previous ones down by one slot. Empty cells fall to the bottom.
+        const last3 = history.slice(-3).reverse();
         const padded = [];
         for (const e of last3) padded.push(e);
         while (padded.length < 3) padded.push(null);
-        // Index of the most recently played cell (or -1 if none yet)
-        const latestIdx = last3.length - 1;
+        const latestIdx = last3.length > 0 ? 0 : -1; // top cell holds the newest
 
         // Headers
         UI.text(ctx, 'TUE', leftX + cellSize / 2, colTop - 10, {
